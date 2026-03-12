@@ -6,5 +6,8 @@ export default defineConfig({
     host: '0.0.0.0',      
     strictPort: true,     
     open: true           
-  }
+  },
+  build: {
+    outDir: 'static', 
+  },
 })
