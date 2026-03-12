@@ -11,15 +11,7 @@ export default defineConfig({
     outDir: 'static',
     rollupOptions: {
       output: {
-        entryFileNames: (chunkInfo) => {
-          return `assets/[name]-[hash].js`.toLowerCase();
-        },
-        chunkFileNames: (chunkInfo) => {
-          return `assets/[name]-[hash].js`.toLowerCase();
-        },
-        assetFileNames: (assetInfo) => {
-          return `assets/[name]-[hash].[ext]`.toLowerCase();
-        }
+        hashCharacters: 'hex'
       }
     }
   },
