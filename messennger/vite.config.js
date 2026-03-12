@@ -8,6 +8,7 @@ export default defineConfig({
     open: true
   },
   build: {
+    sourcemap: false,
     outDir: 'static',
     rollupOptions: {
       output: {
@@ -15,4 +16,5 @@ export default defineConfig({
       }
     }
   },
+  minify: 'terser',
 })
