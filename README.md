@@ -5,9 +5,9 @@
 
 [Ссылка на макет](https://www.figma.com/design/jF5fFFzgGOxQeB4CmKWTiE/Chat_external_link?node-id=1-619&t=uONlVY2OViyHxTrU-0)
 
-## 🚀 Демо
+## 🚀 Деплой
 
-[Ссылка на демо-версию](#)
+[Ссылка на деплой](https://vermillion-arithmetic-cd277c.netlify.app/)
 
 ## 📋 Особенности
 
