@@ -1,4 +1,5 @@
 
+
 # Messenger App 💬
 
 Современное приложение для обмена сообщениями в реальном времени. Создано с использованием Type Script и Vite.
@@ -29,4 +30,6 @@
 npm run dev - Запуск в режиме разработки
 npm run start -	Сборка и запуск проекта
 
+
+pr первого спринта https://github.com/Olya192/midle.messenger.practikum/pull/8
 
