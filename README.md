@@ -1,13 +1,14 @@
 
+
 # Messenger App 💬
 
 Современное приложение для обмена сообщениями в реальном времени. Создано с использованием Type Script и Vite.
 
 [Ссылка на макет](https://www.figma.com/design/jF5fFFzgGOxQeB4CmKWTiE/Chat_external_link?node-id=1-619&t=uONlVY2OViyHxTrU-0)
 
-## 🚀 Демо
+## 🚀 Деплой
 
-[Ссылка на демо-версию](#)
+[Ссылка на деплой](https://vermillion-arithmetic-cd277c.netlify.app/)
 
 ## 📋 Особенности
 
@@ -29,4 +30,6 @@
 npm run dev - Запуск в режиме разработки
 npm run start -	Сборка и запуск проекта
 
+
+pr первого спринта https://github.com/Olya192/midle.messenger.practikum/pull/8
 

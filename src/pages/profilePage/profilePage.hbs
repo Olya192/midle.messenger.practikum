@@ -1,0 +1,22 @@
+<main class="profile">
+      {{>button-back}}  
+    <div class="profile__container">
+       <div class="profile__main">
+          <div class="profile__image">
+             <img src="../../../public/Union.svg">  
+            </div>          
+         <p class="profile__name">Иван</p>
+        </div> 
+        <div class="profile__inform-cards">
+           {{#each profile}}
+          {{>inform-card}}
+            {{/each}} 
+        </div>
+        <div class="profile__buttons">
+          <a href="#" class="profile__button-activ">Изменить данные</p>
+          <a href="#" class="profile__button-activ">Изменить пароль</p>
+          <a href="#" class="profile__button-exit">Выйти</p> 
+         </div>
+     </div> 
+</main>
+{{>footer}}
