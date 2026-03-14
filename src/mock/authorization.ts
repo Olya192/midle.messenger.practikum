@@ -4,6 +4,7 @@ export interface AuthService {
   input: {
     label: string;
     type: string;
+    name: string;
   }[];
 }
 
@@ -14,10 +15,12 @@ export const authorization: AuthService = {
     {
       label: "Логин",
       type: "text",
+      name: "login",
     },
     {
       label: "Пароль",
       type: "password",
+      name: "password",
     },
   ],
 };
@@ -29,30 +32,37 @@ export const registration: AuthService = {
     {
       label: "Почта",
       type: "email",
+      name: "email",
     },
     {
       label: "Логин",
       type: "text",
+      name: "login",
     },
     {
       label: "Имя",
       type: "text",
+      name: "name",
     },
     {
       label: "Фамилия",
       type: "text",
+      name: "surname",
     },
     {
       label: "Телефон",
       type: "tel",
+      name: "phone",
     },
     {
       label: "Пароль",
       type: "password",
+      name: "password",
     },
     {
       label: "Пароль (ещё раз)",
       type: "password",
+      name: "tow-password",
     },
   ],
 };
