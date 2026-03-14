@@ -5,6 +5,7 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  padding-top: 60px;
 
   &__container {
     width: 510px;
@@ -66,6 +67,30 @@
     width: 40px;
     height: 40px;
     background-color: #000;
+  }
+
+  &__redact-cards {
+    margin-bottom: 50px;
+  }
+
+  &__input-box {
+    border-bottom: 1px solid #eaeaea;
+    width: 510px;
+    height: 33px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    & input {
+      border: none;
+      text-align: right;
+      color: #999;
+    }
+
+    & label {
+      font-size: 13px;
+      color: #1e1e1e;
+    }
   }
 }
 

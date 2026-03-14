@@ -7,15 +7,13 @@
             </div>          
          <p class="profile__name">Иван</p>
         </div> 
-        <div class="profile__inform-cards">
-           {{#each profile}}
-          {{>inform-card}}
+        <div class="profile__redact-cards">
+           {{#each redactData}}
+          {{>input-profile}}
             {{/each}} 
         </div>
-        <div class="profile__buttons">
-          <a href="#" class="profile__button-activ">Изменить данные</p>
-          <a href="#" class="profile__button-activ">Изменить пароль</p>
-          <a href="#" class="profile__button-exit">Выйти</p> 
+        <div class="profile__button-redact">
+{{>button-form button = 'Сохранить'}}
          </div>
      </div> 
 </main>
