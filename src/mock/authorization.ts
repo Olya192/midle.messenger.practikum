@@ -42,12 +42,12 @@ export const registration: AuthService = {
     {
       label: "Имя",
       type: "text",
-      name: "name",
+      name: "first_name",
     },
     {
       label: "Фамилия",
       type: "text",
-      name: "surname",
+      name: "second_name",
     },
     {
       label: "Телефон",

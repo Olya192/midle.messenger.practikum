@@ -54,13 +54,13 @@ export const profileRedact: Redact[] = [
     label: "Имя",
     text: "Иван",
     type: "text",
-    name:'name'
+    name:'first_name'
   },
   {
     label: "Фамилия",
     text: "Иванов",
     type: "text",
-    name:'surname'
+    name:'second_name'
   },
   {
     label: "Имя в чате",
@@ -81,18 +81,18 @@ export const passwordRedact: Redact[] = [
     label: "Старый пароль",
     text: "ggeejkmdfhgg",
     type: "password",
-    name:'old-password'
+    name:'old_password'
   },
   {
     label: "Новый пароль",
     text: "Новый пароль",
     type: "password",
-    name:'new-password'
+    name:'new_password'
   },
   {
     label: "Повторите новый пароль",
     text: "Новый пароль",
     type: "password",
-    name:'new-password2'
+    name:'new_password2'
   },
 ];
