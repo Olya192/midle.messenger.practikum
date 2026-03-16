@@ -1,0 +1,14 @@
+<div class="main">
+  <h1 class="main__title">Вход</h1>
+  <form action="" method="get" class="main-form">
+{{#each authorization.input}}
+{{>input-form}}
+    {{/each}}
+    <div class="main-form__button-box">
+      {{>button-form authorization}}
+      {{>link authorization}}
+    </div>
+  </form>
+</div>
+
+
