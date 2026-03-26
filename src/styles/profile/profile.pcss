@@ -92,6 +92,28 @@
       color: #1e1e1e;
     }
   }
+
+  &__error-message {
+    color: #f44;
+    font-size: 12px;
+    margin-top: 5px;
+    display: none;
+  }
+
+  &__error-message.visible {
+    display: block;
+  }
+
+  &__input-box.err {
+    border-color: #f44;
+    outline-color: #f44;
+  }
+
+  &__input-box.err:focus {
+    border-color: #f44;
+    outline-color: #f44;
+  }
+
 }
 
 .button-back {

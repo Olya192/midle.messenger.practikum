@@ -5,18 +5,23 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "type-check": "tsc --noEmit",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "start": "npm run build && npm run preview"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@yoichiro/vite-plugin-handlebars": "^1.4.0",
     "autoprefixer": "^10.4.27",
+    "eslint": "^10.0.3",
+    "globals": "^17.4.0",
     "postcss-import": "^16.1.1",
     "postcss-nested": "^7.0.2",
     "stylelint": "^17.4.0",
     "stylelint-config-standard": "^40.0.0",
     "typescript": "~5.9.3",
+    "typescript-eslint": "^8.57.1",
     "vite": "^7.3.1"
   },
   "dependencies": {
@@ -24,6 +29,6 @@
     "vite-plugin-handlebars": "^2.0.0"
   },
   "engines": {
-  "node": ">=18.0.0"
-}
+    "node": ">=18.0.0"
+  }
 }

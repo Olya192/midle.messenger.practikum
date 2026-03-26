@@ -1,4 +1,4 @@
-interface Contacts {
+export interface Contacts {
   id: number;
   name: string;
   avatar: string;
@@ -10,7 +10,7 @@ interface Contacts {
   lastSeen: null | string;
 }
 
-interface Messages {
+export interface Messages {
   id: number;
   senderId: number | string;
   text: string;
@@ -21,7 +21,7 @@ interface Messages {
 
 
 
-interface MockData {
+export interface MockData {
   name: string,
     avatar: string,
 }
