@@ -55,10 +55,30 @@
     font-weight: 500;
     margin-bottom: 8px;
   }
- 
-  &__input{
+
+  &__input {
     border: none;
-    border-bottom: 1px solid #3369F3;
+    border-bottom: 1px solid #3369f3;
   }
 
+  &__error-message {
+    color: #f44;
+    font-size: 12px;
+    margin-top: 5px;
+    display: none;
+  }
+
+  &__error-message.visible {
+    display: block;
+  }
+
+  &__input.err {
+    border-color: #f44;
+    outline-color: #f44;
+  }
+
+  &__input.err:focus {
+    border-color: #f44;
+    outline-color: #f44;
+  }
 }
