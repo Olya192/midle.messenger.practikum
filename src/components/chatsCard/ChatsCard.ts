@@ -3,7 +3,7 @@ import Block from "../../framework/Block";
 export class ChatsCard extends Block {
   static componentName = "ChatsCard";
   protected template = `<div class="chats__card">
-  <img src={{avatar}} alt="аватар" />
+  <img src={{avatar}} alt="Аватар" />
   <div class="chats__info">
     <p class="chats__name">{{name}}</p>
     <p class="chats__text" >{{lastMessage}}</p>

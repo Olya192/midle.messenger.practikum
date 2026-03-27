@@ -1,109 +1,115 @@
 import Block from "../../framework/Block";
+import type { InputFormProps, ValidationResult } from "../../types/type";
 
-export class InputForm extends Block {
+
+export class InputForm extends Block <InputFormProps> {
   static componentName = "InputForm";
   protected template = `<div class="main-form__input-box">
-  <label for="login" class="main-form__label">{{label}}</label>
+  <label for={{name}} class="main-form__label">{{label}}</label>
   <input
     class="main-form__input"
     type={{type}}
     name={{name}}
     ref={{ref}}
     required
+    id={{name}}
   />
    <div class="main-form__error-message" data-error="{{name}}"></div>
 </div>`;
 
-
-  constructor(props: any = {}) {
+  constructor(props: InputFormProps) {
     super(props);
     // Инициализируем состояние ошибки
-    this.props.error = '';
+    this.props.error = "";
   }
 
   // Метод валидации в зависимости от имени поля
-  validateField(name: string, value: string): string {
+  validateField(name: string, value: string): ValidationResult {
     switch (name) {
-      case 'first_name':
-      case 'second_name':
+      case "first_name":
+      case "second_name":
         return this.validateName(value);
-      case 'login':
+      case "login":
         return this.validateLogin(value);
-      case 'password':
+      case "password":
         return this.validatePassword(value);
-      case 'email':
+      case "email":
         return this.validateEmail(value);
-      case 'phone':
+      case "phone":
         return this.validatePhone(value);
       default:
-        return '';
+        return "";
     }
   }
 
   // Валидация имени (first_name, second_name)
-  private validateName(value: string): string {
-    const pattern = /^[A-ZА-Я][a-zа-я]*(?:-[A-ZА-Я][a-zа-я]*)?$/;
+  private validateName(value: string): ValidationResult {
+    const pattern = /^[A-ZА-ЯЁ][a-zа-яё]*(?:-[A-ZА-ЯЁ][a-zа-яё]*)?$/;
     if (!value) {
-      return 'Поле обязательно для заполнения';
+      return "Поле обязательно для заполнения";
     }
     if (!pattern.test(value)) {
-      return 'Первая буква заглавная, только буквы (латиница или кириллица), допустим дефис';
+      return "Первая буква заглавная, только буквы (латиница или кириллица), допустим дефис";
     }
-    return '';
+    return "";
   }
 
   // Валидация логина
-  private validateLogin(value: string): string {
+  private validateLogin(value: string): ValidationResult {
     const pattern = /^(?=.*[a-zA-Z])[a-zA-Z0-9_-]{3,20}$/;
     if (!value) {
-      return 'Поле обязательно для заполнения';
+      return "Поле обязательно для заполнения";
     }
     if (value.length < 3 || value.length > 20) {
-      return 'Логин должен быть от 3 до 20 символов';
+      return "Логин должен быть от 3 до 20 символов";
     }
     if (!pattern.test(value)) {
-      return 'Логин должен содержать латиницу, может содержать цифры, дефис и подчеркивание, но не состоять только из цифр';
+      return "Логин должен содержать латиницу, может содержать цифры, дефис и подчеркивание, но не состоять только из цифр";
     }
-    return '';
+    return "";
   }
 
   // Валидация email
-  private validateEmail(value: string): string {
+  private validateEmail(value: string): ValidationResult {
     const pattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!value) {
-      return 'Поле обязательно для заполнения';
+      return "Поле обязательно для заполнения";
     }
     if (!pattern.test(value)) {
-      return 'Введите корректный email (латиница, цифры, @ и точка)';
+      return "Введите корректный email (латиница, цифры, @ и точка)";
     }
-    return '';
+    return "";
   }
 
   // Валидация пароля
-  private validatePassword(value: string): string {
-    const pattern = /^(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,40}$/;
+  private validatePassword(value: string): ValidationResult {
     if (!value) {
-      return 'Поле обязательно для заполнения';
+      return "Поле обязательно для заполнения";
     }
     if (value.length < 8 || value.length > 40) {
-      return 'Пароль должен быть от 8 до 40 символов';
+      return "Пароль должен быть от 8 до 40 символов";
     }
-    if (!pattern.test(value)) {
-      return 'Пароль должен содержать минимум одну заглавную букву и одну цифру';
+    const hasUpperCase = /[A-Z]/.test(value);
+    const hasDigit = /[0-9]/.test(value);
+    if (!hasUpperCase) {
+      return "Пароль должен содержать минимум одну заглавную букву";
     }
-    return '';
+    if (!hasDigit) {
+      return "Пароль должен содержать минимум одну цифру";
+    }
+    return "";
   }
 
   // Валидация телефона
-  private validatePhone(value: string): string {
+  private validatePhone(value: string): ValidationResult {
     const pattern = /^\+?\d{10,15}$/;
     if (!value) {
-      return 'Поле обязательно для заполнения';
+      return "Поле обязательно для заполнения";
     }
     if (!pattern.test(value)) {
-      return 'Телефон должен содержать 10-15 цифр, может начинаться с +';
+      return "Телефон должен содержать 10-15 цифр, может начинаться с +";
     }
-    return '';
+    return "";
   }
 
   // Получение элемента инпута по ref
@@ -119,7 +125,7 @@ export class InputForm extends Block {
   private getErrorElement(): HTMLElement | null {
     const element = this.element();
     if (!element) return null;
-    
+
     const fieldName = this.props.name;
     return element.querySelector(`[data-error="${fieldName}"]`) as HTMLElement;
   }
@@ -128,16 +134,16 @@ export class InputForm extends Block {
   private showError(errorMessage: string): void {
     const errorElement = this.getErrorElement();
     const inputElement = this.getInputElement();
-    
+
     if (errorElement) {
       errorElement.textContent = errorMessage;
-      errorElement.classList.add('visible');
+      errorElement.classList.add("visible");
     }
-    
+
     if (inputElement) {
-      inputElement.classList.add('err');
+      inputElement.classList.add("err");
     }
-    
+
     // Сохраняем ошибку в пропсы
     this.props.error = errorMessage;
   }
@@ -146,18 +152,18 @@ export class InputForm extends Block {
   private hideError(): void {
     const errorElement = this.getErrorElement();
     const inputElement = this.getInputElement();
-    
+
     if (errorElement) {
-      errorElement.textContent = '';
-      errorElement.classList.remove('visible');
+      errorElement.textContent = "";
+      errorElement.classList.remove("visible");
     }
-    
+
     if (inputElement) {
-      inputElement.classList.remove('err');
+      inputElement.classList.remove("err");
     }
-    
+
     // Очищаем ошибку в пропсах
-    this.props.error = '';
+    this.props.error = "";
   }
 
   // Обработчик события blur
@@ -165,7 +171,7 @@ export class InputForm extends Block {
     const input = event.target as HTMLInputElement;
     const fieldName = this.props.name;
     const value = input.value;
-    
+
     if (fieldName) {
       const errorMessage = this.validateField(fieldName, value);
       if (errorMessage) {
@@ -174,12 +180,12 @@ export class InputForm extends Block {
         this.hideError();
       }
     }
-  }
+  };
 
   // Публичный метод для получения значения поля
   getValue(): string {
     const input = this.getInputElement();
-    return input ? input.value : '';
+    return input ? input.value : "";
   }
 
   // Публичный метод для установки значения поля
@@ -194,7 +200,7 @@ export class InputForm extends Block {
   validate(): boolean {
     const fieldName = this.props.name;
     const value = this.getValue();
-    
+
     if (fieldName) {
       const errorMessage = this.validateField(fieldName, value);
       if (errorMessage) {
@@ -205,7 +211,7 @@ export class InputForm extends Block {
         return true;
       }
     }
-    
+
     return true;
   }
 
@@ -218,7 +224,7 @@ export class InputForm extends Block {
   private bindEvents(): void {
     const input = this.getInputElement();
     if (input) {
-      input.addEventListener('blur', this.handleBlur);
+      input.addEventListener("blur", this.handleBlur);
     }
   }
 
@@ -226,7 +232,7 @@ export class InputForm extends Block {
   private unbindEvents(): void {
     const input = this.getInputElement();
     if (input) {
-      input.removeEventListener('blur', this.handleBlur);
+      input.removeEventListener("blur", this.handleBlur);
     }
   }
 
@@ -241,5 +247,4 @@ export class InputForm extends Block {
     this.unbindEvents();
     super.componentWillUnmount();
   }
-
 }

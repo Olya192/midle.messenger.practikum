@@ -1,12 +1,38 @@
 import Handlebars from "handlebars";
+import type { BaseProps, FieldType } from "../types/type";
+import type { AuthService } from "../mock/authorization";
+import type { Contacts, Messages, MockData } from "../mock/chats";
+import type { Profile } from "../mock/profile";
 
-export interface BlockOwnProps {
+export interface BlockOwnProps extends BaseProps {
   __children?: Array<{
     component: Block<object>;
     embed(node: DocumentFragment): void;
   }>;
   __refs?: Record<string, Element>;
-  [key: string]: any;
+  error?: string;
+  name?: string;
+  ref?: string;
+  authorization?:
+    | AuthService
+    | {
+        input: Array<{
+          type: FieldType;
+          name: string;
+          ref: string;
+          label: string;
+        }>;
+        button: string;
+        link: {
+          text: string;
+          href: string;
+        };
+      };
+  registration?: AuthService;
+  mockContacts?: Contacts[];
+  mockMessages?: Messages[];
+  mockData?: MockData;
+  profile?: Profile[];
 }
 
 type EventListType = Partial<

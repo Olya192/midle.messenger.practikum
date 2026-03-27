@@ -1,7 +1,8 @@
 import Block from "../../framework/Block";
+import type { AuthorizFormProps } from "../../types/type";
 import { InputForm } from "../input/InputForm";
 
-export class AuthorizForm extends Block {
+export class AuthorizForm extends Block <AuthorizFormProps> {
   static componentName = "AuthorizForm";
   protected template = `<div class="main">
  <h1 class="main__title">Вход</h1>
@@ -18,7 +19,7 @@ export class AuthorizForm extends Block {
   
   private inputFields: Map<string, InputForm> = new Map();
 
-  constructor(props: any = {}) {
+  constructor(props: AuthorizFormProps) {
     super(props);
   }
 
