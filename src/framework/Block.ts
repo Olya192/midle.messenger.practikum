@@ -12,7 +12,7 @@ export interface BlockOwnProps extends BaseProps {
   __refs?: Record<string, Element>;
   error?: string;
   name?: string;
-  ref?: HTMLElement | null;
+  ref?: string;
   authorization?:
     | AuthService
     | {
