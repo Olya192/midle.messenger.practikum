@@ -9,6 +9,7 @@
 ## 🚀 Деплой
 
 [Ссылка на деплой](https://vermillion-arithmetic-cd277c.netlify.app/)
+[Ссылка на деплой vercel, так как Netlify кончились лимиты и заблокирован](https://midle-messenger-practikum-ogu7hgdlh-olyas-projects-8de5d7af.vercel.app/)
 
 ## 📋 Особенности
 
