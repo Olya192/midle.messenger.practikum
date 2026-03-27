@@ -12,24 +12,27 @@ export interface BlockOwnProps extends BaseProps {
   __refs?: Record<string, Element>;
   error?: string;
   name?: string;
-  authorization?:AuthService|{
-      input: Array<{
-        type: FieldType;
-        name: string;
-        ref: string;
-        label: string;
-      }>;
-      button: string;
-      link: {
-        text: string;
-        href: string;
-      } ;
-    };
-  registration?:AuthService;
-  mockContacts?:Contacts[];
-  mockMessages?:Messages[];
-  mockData?:MockData;
-  profile?:Profile[];
+  ref?: HTMLElement | null;
+  authorization?:
+    | AuthService
+    | {
+        input: Array<{
+          type: FieldType;
+          name: string;
+          ref: string;
+          label: string;
+        }>;
+        button: string;
+        link: {
+          text: string;
+          href: string;
+        };
+      };
+  registration?: AuthService;
+  mockContacts?: Contacts[];
+  mockMessages?: Messages[];
+  mockData?: MockData;
+  profile?: Profile[];
 }
 
 type EventListType = Partial<
