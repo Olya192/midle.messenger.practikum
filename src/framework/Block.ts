@@ -10,6 +10,8 @@ export interface BlockOwnProps extends BaseProps {
     embed(node: DocumentFragment): void;
   }>;
   __refs?: Record<string, Element>;
+  error?: string;
+  name?: string;
   authorization?:AuthService|{
       input: Array<{
         type: FieldType;
