@@ -1,7 +1,8 @@
 import { InputProfile } from "../../components/input/InputProfile";
 import Block from "../../framework/Block";
+import type { RedactProfilePageeProps } from "../../types/type";
 
-export class RedactProfilePagee extends Block {
+export class RedactProfilePagee extends Block <RedactProfilePageeProps> {
   static componentName = "RedactProfilePagee";
 
   protected template = `<main class="profile">
@@ -27,7 +28,7 @@ export class RedactProfilePagee extends Block {
 
   private inputFields: Map<string, InputProfile> = new Map();
 
-  constructor(props: any = {}) {
+  constructor(props: RedactProfilePageeProps) {
     super(props);
   }
 

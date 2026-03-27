@@ -1,14 +1,18 @@
+import type { FieldType } from "../types/type";
+
 export interface Profile {
   title: string;
   text: string;
 }
 
 export interface Redact {
-  label: string;
-  text: string;
-  type: string;
+  type: FieldType;
   name: string;
+  value?: string;
+  label: string;
   ref: string;
+  disabled?: boolean;
+  text: string;
 }
 
 export const profile: Profile[] = [

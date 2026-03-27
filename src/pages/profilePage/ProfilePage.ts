@@ -7,7 +7,10 @@ export class ProfilePage extends Block {
     <div class="profile__container">
        <div class="profile__main">
           <div class="profile__image">
-             <img src="../../../public/Union.svg">  
+              <label for="avatar" class="profile__image-label">
+                <img src="../../../public/Union.svg" alt="Загрузить аватар">
+              </label>
+              <input type="file" name="avatar" id="avatar" class="profile__input" accept="image/*" hidden>
             </div>          
          <p class="profile__name">Иван</p>
         </div> 
@@ -17,9 +20,9 @@ export class ProfilePage extends Block {
             {{/each}} 
         </div>
         <div class="profile__buttons">
-          <a href="#" class="profile__button-activ">Изменить данные</p>
-          <a href="#" class="profile__button-activ">Изменить пароль</p>
-          <a href="#" class="profile__button-exit">Выйти</p> 
+          <a href="#" class="profile__button-activ">Изменить данные</a>
+          <a href="#" class="profile__button-activ">Изменить пароль</a>
+          <a href="#" class="profile__button-exit">Выйти</a> 
          </div>
      </div> 
      {{{Footer}}}

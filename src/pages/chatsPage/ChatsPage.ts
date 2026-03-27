@@ -16,9 +16,9 @@ export class ChatsPage extends Block {
   </div>
   <div class="messages">
     <div class="messages__header">
-       <img src={{mockData.avatar}} alt="" class="messages__avatar">
+       <img src={{mockData.avatar}} alt="Avatar" class="messages__avatar">
        <p>{{mockData.name}}</p>
-       <img src="../../../public/Group 194.svg" alt="" class="messages__more">
+       <img src="../../../public/Group 194.svg" alt="More" class="messages__more">
     </div>
     <section class="messages__cards ">
       {{#each mockMessages}}
@@ -28,10 +28,12 @@ export class ChatsPage extends Block {
     <div class="messages__write">
       <input type="file" id="file-box" class="messages__file-box">
       <label for="file-box" class="messages__file-label">
-              <img src="../../../public/Group 196.svg" alt="" >
+              <img src="../../../public/Group 196.svg" alt="Загрузить файл" >
       </label>
+      <form class="messages__form">
       <input type="text" placeholder="Сообщение" class="messages__box">
-      <img src="../../../public/Group 202.svg" class="messages__enter" >
+      <button class="messages__button" type="submit"><img src="../../../public/Group 202.svg" class="messages__enter" alt="Отправить"></button>    
+      </form>  
     </div>
   </div>
 {{{Footer}}}  

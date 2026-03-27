@@ -23,4 +23,5 @@ export default defineConfig({
     }
   },
   minify: 'terser',
+  base: '/midle.messenger.practikum/'
 })
