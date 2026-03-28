@@ -39,16 +39,16 @@ export class RegisdtrationForm extends Block <AuthorizFormProps> {
 
   // Собираем все поля формы из __children
   private collectInputFields(): void {
-    if (this.props.__children) {
-      this.props.__children.forEach((child: any) => {
-        if (child.component instanceof InputForm) {
-          const name = child.component.props.name;
-          if (name) {
-            this.inputFields.set(name, child.component);
-          }
+    this.props.__children?.forEach((child) => {
+      const component = child.component;
+
+      if (component instanceof InputForm) {
+        const name = component.getName(); // Используем публичный метод
+        if (name) {
+          this.inputFields.set(name, component);
         }
-      });
-    }
+      }
+    });
   }
 
   private handleSubmit(event: Event): void {

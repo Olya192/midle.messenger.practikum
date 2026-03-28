@@ -23,6 +23,10 @@ export class InputForm extends Block <InputFormProps> {
     this.props.error = "";
   }
 
+    public getName(): string | undefined {
+    return this.props.name;
+  }
+
   // Метод валидации в зависимости от имени поля
   validateField(name: string, value: string): ValidationResult {
     switch (name) {

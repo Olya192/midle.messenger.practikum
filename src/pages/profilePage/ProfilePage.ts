@@ -6,12 +6,12 @@ export class ProfilePage extends Block {
       {{{ButtonBack}}}  
     <div class="profile__container">
        <div class="profile__main">
-          <div class="profile__image">
+          <form class="profile__image">
               <label for="avatar" class="profile__image-label">
                 <img src="../../../public/Union.svg" alt="Загрузить аватар">
               </label>
               <input type="file" name="avatar" id="avatar" class="profile__input" accept="image/*" hidden>
-            </div>          
+            </form>          
          <p class="profile__name">Иван</p>
         </div> 
         <div class="profile__inform-cards">

@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "start": "npm run build && npm run preview",
     "eslint": "eslint \"src/**/*.[jt]s\"",
-    "stylelint": "stylelint \"src/**/*.scss\"",
+    "stylelint": "stylelint \"src/**/*.pcss\"",
     "lint": "tsc --noEmit && npm run stylelint && npm run eslint"
   },
   "devDependencies": {

@@ -4,10 +4,10 @@ export class ChatsPage extends Block {
   static componentName = "ChatsPage";
   protected template = `<main class="messenger">
   <div class="chats">
-    <div class="chats__header">
+    <form class="chats__header">
       <p>Профиль &gt;</p>
       <input type="text" placeholder=" Поиск"/>
-    </div>
+    </form>
     <section class="chats__cards">
       {{#each mockContacts}}
        {{{ChatsCard avatar=avatar name=name lastMessage=lastMessage lastMessageTime=lastMessageTime unreadCount=unreadCount}}}
@@ -25,16 +25,16 @@ export class ChatsPage extends Block {
         {{{MessagesCard senderId=senderId text=text time=time}}}
       {{/each}}
     </section>
-    <div class="messages__write">
+    <form class="messages__write">
       <input type="file" id="file-box" class="messages__file-box">
       <label for="file-box" class="messages__file-label">
               <img src="../../../public/Group 196.svg" alt="Загрузить файл" >
       </label>
-      <form class="messages__form">
+      <div class="messages__form">
       <input type="text" placeholder="Сообщение" class="messages__box">
       <button class="messages__button" type="submit"><img src="../../../public/Group 202.svg" class="messages__enter" alt="Отправить"></button>    
-      </form>  
-    </div>
+      </div>  
+    </form>
   </div>
 {{{Footer}}}  
 </main>

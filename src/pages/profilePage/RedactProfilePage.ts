@@ -46,18 +46,19 @@ export class RedactProfilePagee extends Block <RedactProfilePageeProps> {
   }
 
   // Собираем все поля формы из __children
-  private collectInputFields(): void {
-    if (this.props.__children) {
-      this.props.__children.forEach((child: any) => {
-        if (child.component instanceof InputProfile) {
-          const name = child.component.props.name;
+
+    private collectInputFields(): void {
+      this.props.__children?.forEach((child) => {
+        const component = child.component;
+  
+        if (component instanceof InputProfile) {
+          const name = component.getName(); // Используем публичный метод
           if (name) {
-            this.inputFields.set(name, child.component);
+            this.inputFields.set(name, component);
           }
         }
       });
     }
-  }
 
   private handleSubmit(event: Event): void {
     event.preventDefault();

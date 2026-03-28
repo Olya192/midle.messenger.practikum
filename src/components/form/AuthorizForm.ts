@@ -2,7 +2,7 @@ import Block from "../../framework/Block";
 import type { AuthorizFormProps } from "../../types/type";
 import { InputForm } from "../input/InputForm";
 
-export class AuthorizForm extends Block <AuthorizFormProps> {
+export class AuthorizForm extends Block<AuthorizFormProps> {
   static componentName = "AuthorizForm";
   protected template = `<div class="main">
  <h1 class="main__title">Вход</h1>
@@ -16,7 +16,7 @@ export class AuthorizForm extends Block <AuthorizFormProps> {
       </div>
     </form>
   </div>`;
-  
+
   private inputFields: Map<string, InputForm> = new Map();
 
   constructor(props: AuthorizFormProps) {
@@ -38,16 +38,16 @@ export class AuthorizForm extends Block <AuthorizFormProps> {
 
   // Собираем все поля формы из __children
   private collectInputFields(): void {
-    if (this.props.__children) {
-      this.props.__children.forEach((child: any) => {
-        if (child.component instanceof InputForm) {
-          const name = child.component.props.name;
-          if (name) {
-            this.inputFields.set(name, child.component);
-          }
+    this.props.__children?.forEach((child) => {
+      const component = child.component;
+
+      if (component instanceof InputForm) {
+        const name = component.getName(); // Используем публичный метод
+        if (name) {
+          this.inputFields.set(name, component);
         }
-      });
-    }
+      }
+    });
   }
 
   private handleSubmit(event: Event): void {

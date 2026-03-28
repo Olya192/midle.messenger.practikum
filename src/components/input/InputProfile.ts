@@ -1,23 +1,30 @@
 import Block from "../../framework/Block";
+import type { InputFormProps, ValidationResult } from "../../types/type";
 
 export class InputProfile extends Block {
   static componentName = "InputProfile";
   protected template = `<div class="profile__input-box">
-  <label for="login">{{label}}</label>
+  <label for={{name}}>{{label}}</label>
   <input
     type={{type}}
     name={{name}}
     ref={{ref}}
     required
     value={{text}}
+    id={{name}}
   />
   <div class="main-form__error-message" data-error="{{name}}"></div>
 </div>`;
 
-  constructor(props: any = {}) {
+  constructor(props: InputFormProps) {
     super(props);
     // Инициализируем состояние ошибки
     this.props.error = "";
+  }
+
+  
+    public getName(): string | undefined {
+    return this.props.name;
   }
 
   // Метод валидации в зависимости от имени поля
@@ -42,8 +49,8 @@ export class InputProfile extends Block {
   }
 
   // Валидация имени (first_name, second_name)
-  private validateName(value: string): string {
-    const pattern = /^[A-ZА-Я][a-zа-я]*(?:-[A-ZА-Я][a-zа-я]*)?$/;
+  private validateName(value: string): ValidationResult {
+    const pattern = /^[A-ZА-ЯЁ][a-zа-яё]*(?:-[A-ZА-ЯЁ][a-zа-яё]*)?$/;
     if (!value) {
       return "Поле обязательно для заполнения";
     }
@@ -54,7 +61,7 @@ export class InputProfile extends Block {
   }
 
   // Валидация логина
-  private validateLogin(value: string): string {
+  private validateLogin(value: string): ValidationResult {
     const pattern = /^(?=.*[a-zA-Z])[a-zA-Z0-9_-]{3,20}$/;
     if (!value) {
       return "Поле обязательно для заполнения";
@@ -69,7 +76,7 @@ export class InputProfile extends Block {
   }
 
   // Валидация email
-  private validateEmail(value: string): string {
+  private validateEmail(value: string): ValidationResult {
     const pattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!value) {
       return "Поле обязательно для заполнения";
@@ -81,22 +88,26 @@ export class InputProfile extends Block {
   }
 
   // Валидация пароля
-  private validatePassword(value: string): string {
-    const pattern = /^(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,40}$/;
-    if (!value) {
-      return "Поле обязательно для заполнения";
+  private validatePassword(value: string): ValidationResult {
+      if (!value) {
+        return "Поле обязательно для заполнения";
+      }
+      if (value.length < 8 || value.length > 40) {
+        return "Пароль должен быть от 8 до 40 символов";
+      }
+      const hasUpperCase = /[A-Z]/.test(value);
+      const hasDigit = /[0-9]/.test(value);
+      if (!hasUpperCase) {
+        return "Пароль должен содержать минимум одну заглавную букву";
+      }
+      if (!hasDigit) {
+        return "Пароль должен содержать минимум одну цифру";
+      }
+      return "";
     }
-    if (value.length < 8 || value.length > 40) {
-      return "Пароль должен быть от 8 до 40 символов";
-    }
-    if (!pattern.test(value)) {
-      return "Пароль должен содержать минимум одну заглавную букву и одну цифру";
-    }
-    return "";
-  }
 
   // Валидация телефона
-  private validatePhone(value: string): string {
+  private validatePhone(value: string): ValidationResult {
     const pattern = /^\+?\d{10,15}$/;
     if (!value) {
       return "Поле обязательно для заполнения";
