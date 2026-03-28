@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "handlebars": "^4.7.8",
+    "jiti": "^2.6.1",
     "vite-plugin-handlebars": "^2.0.0"
   },
   "engines": {

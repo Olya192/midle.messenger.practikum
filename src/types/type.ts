@@ -85,9 +85,3 @@ export interface LinkProps extends BlockOwnProps {
 export interface ButtonBackProps extends BlockOwnProps {
   onClick?: (event: Event) => void;
 }
-
-// Пропсы для Footer
-export interface FooterProps extends BlockOwnProps {
-  // Свойства футера
-}
-

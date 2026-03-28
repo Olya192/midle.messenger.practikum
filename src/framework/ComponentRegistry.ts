@@ -5,12 +5,14 @@ import type { BlockOwnProps } from "./Block";
 
 let uniqueId = 0;
 
-type BlockConstructor<P extends BlockOwnProps = BlockOwnProps> = {
-  new (props?: P): Block<P>;
+type BlockConstructor<T extends BlockOwnProps = BlockOwnProps> = {
+  new (props: T): Block<T>;
   componentName: string;
 };
 
-function registerComponent(Component: BlockConstructor) {
+function registerComponent<P extends BlockOwnProps = BlockOwnProps>(
+  Component: BlockConstructor<P>
+){
   const dataAttribute = `data-component-hbs-id="${++uniqueId}"`;
 
   Handlebars.registerHelper(
