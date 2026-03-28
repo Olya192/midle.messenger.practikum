@@ -14,7 +14,7 @@ export class RedactProfilePagee extends Block<RedactProfilePageeProps> {
         </div>          
         <p class="profile__name">{{userName}}</p>
       </div> 
-      <form>
+      <form class="profile__form">
        <div class="profile__redact-cards">
         {{#each redactData}}
           {{{InputProfile type=this.type name=this.name text=this.text label=this.label ref=this.ref}}}
