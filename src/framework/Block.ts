@@ -42,7 +42,10 @@ type EventListType = Partial<
 export default abstract class Block<
   Props extends BlockOwnProps = BlockOwnProps,
 > {
+
   protected abstract template: string;
+
+ static componentName: string;
 
   protected props = {} as Props;
 

@@ -2,7 +2,7 @@ import { InputProfile } from "../../components/input/InputProfile";
 import Block from "../../framework/Block";
 import type { RedactProfilePageeProps } from "../../types/type";
 
-export class RedactProfilePagee extends Block <RedactProfilePageeProps> {
+export class RedactProfilePagee extends Block<RedactProfilePageeProps> {
   static componentName = "RedactProfilePagee";
 
   protected template = `<main class="profile">
@@ -14,14 +14,16 @@ export class RedactProfilePagee extends Block <RedactProfilePageeProps> {
         </div>          
         <p class="profile__name">{{userName}}</p>
       </div> 
-      <div class="profile__redact-cards">
+      <form>
+       <div class="profile__redact-cards">
         {{#each redactData}}
           {{{InputProfile type=this.type name=this.name text=this.text label=this.label ref=this.ref}}}
         {{/each}} 
-      </div>
-      <div class="profile__button-redact">
+       </div>
+       <div class="profile__button-redact">
         {{{ButtonForm button='Сохранить'}}}
-      </div>
+       </div>
+      </form>
     </div> 
     {{{Footer}}}
   </main>`;
@@ -47,18 +49,18 @@ export class RedactProfilePagee extends Block <RedactProfilePageeProps> {
 
   // Собираем все поля формы из __children
 
-    private collectInputFields(): void {
-      this.props.__children?.forEach((child) => {
-        const component = child.component;
-  
-        if (component instanceof InputProfile) {
-          const name = component.getName(); // Используем публичный метод
-          if (name) {
-            this.inputFields.set(name, component);
-          }
+  private collectInputFields(): void {
+    this.props.__children?.forEach((child) => {
+      const component = child.component;
+
+      if (component instanceof InputProfile) {
+        const name = component.getName(); // Используем публичный метод
+        if (name) {
+          this.inputFields.set(name, component);
         }
-      });
-    }
+      }
+    });
+  }
 
   private handleSubmit(event: Event): void {
     event.preventDefault();
@@ -121,5 +123,4 @@ export class RedactProfilePagee extends Block <RedactProfilePageeProps> {
     }
     super.componentWillUnmount();
   }
-  
 }

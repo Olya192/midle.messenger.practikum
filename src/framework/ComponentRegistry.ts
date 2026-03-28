@@ -1,9 +1,16 @@
 import Handlebars from "handlebars";
 import type { HelperOptions } from "handlebars";
+import type Block from "./Block";
+import type { BlockOwnProps } from "./Block";
 
 let uniqueId = 0;
 
-function registerComponent(Component: any) {
+type BlockConstructor<P extends BlockOwnProps = BlockOwnProps> = {
+  new (props?: P): Block<P>;
+  componentName: string;
+};
+
+function registerComponent(Component: BlockConstructor) {
   const dataAttribute = `data-component-hbs-id="${++uniqueId}"`;
 
   Handlebars.registerHelper(

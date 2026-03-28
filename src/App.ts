@@ -147,8 +147,8 @@ export default class App extends Block<FormProps> {
     });
   }
 
-  //Здесь типизировать нет смысла так как это временная заглушка для навигации и она будет убрана из проекта когда перейдем к роутингу 
-  changePage(page: any) {
+
+  changePage(page: string) {
     this.state.currentPage = page;
     this.render();
   }
