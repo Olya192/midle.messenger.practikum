@@ -1,100 +1,136 @@
 import Handlebars from "handlebars";
-import authorizForm from "./components/form/authorizForm.hbs?raw";
-import authPage from "./pages/autorizationPage/autorizationPage.hbs?raw";
-import buttonForm from "./components/button/button.hbs?raw";
-import { authorization, registration } from "./mock/authorization.ts";
-import inputForm from "./components/input/input.hbs?raw";
-import regisdtrForm from "./components/form/regisdtrationForm.hbs?raw";
-import registrPage from "./pages/regisdtrationPage/regisdtrationPage.hbs?raw";
-import link from "./components/link/link.hbs?raw";
-import buttonBack from "./components/button/buttonBack.hbs?raw";
-import informCard from "./components/imformCard/informCard.hbs?raw";
-import { profile, passwordRedact, profileRedact } from "./mock/profile.ts";
-import profilePage from "./pages/profilePage/profilePage.hbs?raw";
-import chatsPage from "./pages/chatsPage/chatsPage.hbs?raw";
-import chatsCard from "./components/chatsCard/chatsCard.hbs?raw";
-import { mockContacts, mockMessages, mockData } from "./mock/chats.ts";
-import messageCard from "./components/messegCard/messegCard.hbs?raw";
-import NotFoundErr from "./pages/errors/404errorPage.hbs?raw";
-import ServerError from "./pages/errors/500errorPage.hbs?raw";
-import Footer from "./components/footer/footer.hbs?raw";
-import redactProfilePage from "../src/pages/profilePage/redactProfilePage.hbs?raw";
-import inputProfile from "./components/input/inputProfile.hbs?raw";
-
 import "./styles/styles.pcss";
+
+import {
+  authorization,
+  registration,
+  type AuthService,
+} from "./mock/authorization.ts";
+import { profile, passwordRedact, profileRedact } from "./mock/profile.ts";
+import { mockContacts, mockMessages, mockData } from "./mock/chats.ts";
+import Block, { type BlockOwnProps } from "./framework/Block.ts";
+import { registerComponent } from "./framework/ComponentRegistry.ts";
+
+import { InputForm } from "./components/input/InputForm.ts";
+import { AutorizationPage } from "./pages/autorizationPage/autorizationPage.ts";
+import { ButtonForm } from "./components/button/ButtonForm.ts";
+import { Link } from "./components/link/Link.ts";
+import { ChatsPage } from "./pages/chatsPage/ChatsPage.ts";
+import { ButtonBack } from "./components/button/ButtonBack.ts";
+import { ChatsCard } from "./components/chatsCard/ChatsCard.ts";
+import { MessagesCard } from "./components/messegCard/MessagesCard.ts";
+import { InformCard } from "./components/imformCard/InformCard.ts";
+import { AuthorizForm } from "./components/form/AuthorizForm.ts";
+import { RegisdtrationForm } from "./components/form/RegisdtrationForm.ts";
+import { InputProfile } from "./components/input/InputProfile.ts";
+import { Footer } from "./components/footer/Footer.ts";
+import { Error404 } from "./pages/errors/404errorPage.ts";
+import { Error500 } from "./pages/errors/500errorPage.ts";
+import { RedactProfilePagee } from "./pages/profilePage/RedactProfilePage.ts";
+import { ProfilePage } from "./pages/profilePage/ProfilePage.ts";
+import { RegisdtrationPage } from "./pages/regisdtrationPage/RegisdtrationPage.ts";
+
+interface FormProps extends BlockOwnProps {
+  buttonName?: string;
+  authorization?: AuthService;
+  registration?: AuthService;
+}
 
 Handlebars.registerHelper("eq", function (a, b) {
   return a === b;
 });
-Handlebars.registerPartial("input-form", inputForm);
-Handlebars.registerPartial("link", link);
-Handlebars.registerPartial("button-back", buttonBack);
-Handlebars.registerPartial("chats-card", chatsCard);
-Handlebars.registerPartial("message-card", messageCard);
-Handlebars.registerPartial("button-form", buttonForm);
-Handlebars.registerPartial("inform-card", informCard);
-Handlebars.registerPartial("auth-Form", authorizForm);
-Handlebars.registerPartial("registr-Form", regisdtrForm);
-Handlebars.registerPartial("input-profile", inputProfile);
-Handlebars.registerPartial("footer", Footer);
 
-export default class App {
-  private state: { currentPage: string };
-  private appElement: HTMLElement | null;
+registerComponent(ChatsPage);
+registerComponent(AutorizationPage);
+registerComponent(Error404);
+registerComponent(Error500);
+registerComponent(RedactProfilePagee);
+registerComponent(ProfilePage);
+registerComponent(RegisdtrationPage);
+
+registerComponent(InputForm);
+registerComponent(ButtonForm);
+registerComponent(Link);
+registerComponent(ButtonBack);
+registerComponent(ChatsCard);
+registerComponent(MessagesCard);
+registerComponent(InformCard);
+registerComponent(AuthorizForm);
+registerComponent(RegisdtrationForm);
+registerComponent(InputProfile);
+registerComponent(Footer);
+
+export default class App extends Block<FormProps> {
+  state: {
+    currentPage: string;
+  };
+  appElement: HTMLElement | null;
+  currentComponent: Block | null;
 
   constructor() {
+    super({
+      authorization: authorization, // Передаем через пропсы
+      registration: registration,
+      mockContacts: mockContacts,
+      mockMessages: mockMessages,
+      profileRedact:profileRedact,
+      passwordRedact:passwordRedact
+    } as FormProps);
     this.state = {
-      currentPage: "redactProfilePage",
+      currentPage: "authPage",
     };
     this.appElement = document.getElementById("app");
+    this.currentComponent = null;
+  }
+
+  protected template = `{{{ AutorizationPage authorization=authorization}}}`;
+
+  protected componentDidMount() {
+    console.log("form component mounted");
   }
 
   render() {
-    if (!this.appElement) {
-      console.error("App element not found");
-      return;
+    if (!this.appElement) return;
+
+    const { currentPage } = this.state;
+
+    // Очищаем контейнер
+    this.appElement.innerHTML = "";
+
+    // Создаем и монтируем компонент текущей страницы
+    const component = this.createPageComponent(currentPage);
+    if (component) {
+      const element = component.element();
+      if (element) {
+        this.appElement.appendChild(element);
+      }
+      this.currentComponent = component;
     }
-    let redactData;
-    let template;
-    if (this.state.currentPage === "authPage") {
-      template = Handlebars.compile(authPage);
-      this.appElement.innerHTML = template({ authorization });
-    }
-    if (this.state.currentPage === "registrPage") {
-      template = Handlebars.compile(registrPage);
-      this.appElement.innerHTML = template({ registration });
-    }
-    if (this.state.currentPage === "chatsPage") {
-      template = Handlebars.compile(chatsPage);
-      this.appElement.innerHTML = template({
-        mockContacts,
-        mockMessages,
-        mockData,
-      });
-    }
-    if (this.state.currentPage === "profilePage") {
-      template = Handlebars.compile(profilePage);
-      this.appElement.innerHTML = template({ profile });
-    }
-    if (this.state.currentPage === "NotFoundErr") {
-      template = Handlebars.compile(NotFoundErr);
-      this.appElement.innerHTML = template({});
-    }
-    if (this.state.currentPage === "ServerError") {
-      template = Handlebars.compile(ServerError);
-      this.appElement.innerHTML = template({});
-    }
-    if (this.state.currentPage === "redactProfilePage") {
-      template = Handlebars.compile(redactProfilePage);
-      redactData = profileRedact;
-      this.appElement.innerHTML = template({ redactData });
-    }
-    if (this.state.currentPage === "redactProfilePagePass") {
-      template = Handlebars.compile(redactProfilePage);
-      redactData = passwordRedact;
-      this.appElement.innerHTML = template({ redactData });
-    }
+
     this.attachEventListener();
+  }
+
+  private createPageComponent(page: string): Block | null {
+    switch (page) {
+      case "authPage":
+        return new AutorizationPage({ authorization });
+      case "registrPage":
+        return new RegisdtrationPage({ registration });
+      case "chatsPage":
+        return new ChatsPage({ mockContacts, mockMessages, mockData });
+      case "profilePage":
+        return new ProfilePage({ profile });
+      case "redactProfilePage":
+        return new RedactProfilePagee({ redactData: profileRedact });
+      case "redactProfilePagePass":
+        return new RedactProfilePagee({ redactData: passwordRedact });
+      case "NotFoundErr":
+        return new Error404({});
+      case "ServerError":
+        return new Error500({});
+      default:
+        return null;
+    }
   }
 
   attachEventListener() {
@@ -111,8 +147,11 @@ export default class App {
     });
   }
 
-  changePage(page: any) {
+
+  changePage(page: string) {
     this.state.currentPage = page;
     this.render();
   }
+
+
 }

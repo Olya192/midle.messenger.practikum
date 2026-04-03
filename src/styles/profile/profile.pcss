@@ -37,6 +37,10 @@
     }
   }
 
+  &__input {
+    display: none;
+  }
+
   &__card {
     width: 510px;
     border-bottom: 1px solid #eaeaea;
@@ -80,6 +84,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
 
     & input {
       border: none;
@@ -91,6 +96,39 @@
       font-size: 13px;
       color: #1e1e1e;
     }
+
+    &__button-redact {
+      display: flex;
+      justify-content: center;
+    }
+  }
+
+  &__error-message {
+    color: #f44;
+    font-size: 12px;
+    margin-top: 5px;
+    display: none;
+  }
+
+  &__error-message.visible {
+    display: block;
+    flex-basis: 100%;
+  }
+
+  &__input-box.err {
+    border-color: #f44;
+    outline-color: #f44;
+  }
+
+  &__input-box.err:focus {
+    border-color: #f44;
+    outline-color: #f44;
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 }
 
