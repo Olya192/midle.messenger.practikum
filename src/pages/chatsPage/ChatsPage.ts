@@ -5,8 +5,8 @@ export class ChatsPage extends Block {
   protected template = `<main class="messenger">
   <div class="chats">
     <form class="chats__header">
-      <p>Профиль &gt;</p>
-      <input type="text" placeholder=" Поиск"/>
+      <a href='/settings'>Профиль &gt;</a>
+      <input type="text" placeholder="Поиск"/>
     </form>
     <section class="chats__cards">
       {{#each mockContacts}}
@@ -36,7 +36,6 @@ export class ChatsPage extends Block {
       </div>  
     </form>
   </div>
-{{{Footer}}}  
 </main>
 `;
 }

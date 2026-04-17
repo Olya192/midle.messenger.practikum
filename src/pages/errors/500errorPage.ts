@@ -5,8 +5,7 @@ export class Error500 extends Block {
   protected template = `<main class="error">
   <h1>500</h1>
   <h2>Мы уже фиксим</h2>
-  <a href="#">Назад к чатам</a>
-</main>
-{{{Footer}}}`;
+  <a href="/messenger">Назад к чатам</a>
+</main>`;
 
 }

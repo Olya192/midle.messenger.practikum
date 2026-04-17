@@ -5,20 +5,16 @@ import type { BlockOwnProps } from "./Block";
 
 let uniqueId = 0;
 
-
-
-function registerComponent<TProps extends BlockOwnProps>(
- Component: {
-    new (props: TProps): Block<TProps | BlockOwnProps>;
-    componentName: string;
-  }
-)
-{
+function registerComponent<TProps extends BlockOwnProps>(Component: {
+  new (props: TProps): Block<TProps | BlockOwnProps>;
+  componentName: string;
+}) {
   const dataAttribute = `data-component-hbs-id="${++uniqueId}"`;
 
   Handlebars.registerHelper(
     Component.componentName,
     function (this: unknown, { hash, data }: HelperOptions) {
+     
       const component = new Component(hash);
 
       if ("ref" in hash) {
@@ -29,9 +25,19 @@ function registerComponent<TProps extends BlockOwnProps>(
       (data.root.__children = data.root.__children || []).push({
         component,
         embed(node: DocumentFragment) {
+          // Ищем placeholder во фрагменте
           const placeholder = node.querySelector(`[${dataAttribute}]`);
+
+          // Если не нашли во фрагменте, возможно компонент уже вмонтирован
           if (!placeholder) {
-            console.log("dataAttribute", dataAttribute);
+            // Пытаемся найти уже существующий элемент компонента в DOM
+            const existingElement = component.element();
+            if (existingElement && existingElement.parentNode) {
+              // Компонент уже в DOM, ничего не делаем
+              return;
+            }
+
+            // Если компонент не в DOM, но placeholder не найден - ошибка
             throw new Error(
               `Can't find data-id for component ${Component.componentName}`,
             );
@@ -42,11 +48,15 @@ function registerComponent<TProps extends BlockOwnProps>(
             throw new Error("Component element is not created");
           }
 
-          placeholder.replaceWith(element);
+          // Проверяем, не заменен ли уже placeholder
+          if (placeholder.parentNode) {
+            placeholder.replaceWith(element);
+          }
         },
       });
-      
-      return new Handlebars.SafeString(`<div ${dataAttribute}></div>`);
+
+      const result = new Handlebars.SafeString(`<div ${dataAttribute}></div>`);
+      return result;
     },
   );
 }

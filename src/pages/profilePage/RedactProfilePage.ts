@@ -37,17 +37,14 @@ export class RedactProfilePagee extends Block<RedactProfilePageeProps> {
   protected componentDidMount(): void {
     super.componentDidMount();
 
-    // Собираем все экземпляры InputForm в Map для удобного доступа
     this.collectInputFields();
 
-    // Добавляем обработчик отправки формы
     const form = this.element()?.querySelector("#auth-form");
     if (form) {
       form.addEventListener("submit", this.handleSubmit.bind(this));
     }
   }
 
-  // Собираем все поля формы из __children
 
   private collectInputFields(): void {
     this.props.__children?.forEach((child) => {

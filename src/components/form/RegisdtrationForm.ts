@@ -1,18 +1,20 @@
+import { AuthAPI, type SignUpRequest } from "../../api/auth-api";
 import Block from "../../framework/Block";
 import type { AuthorizFormProps } from "../../types/type";
+import { getRouter } from "../../utils/navigation";
 import { InputForm } from "../input/InputForm";
 
-export class RegisdtrationForm extends Block <AuthorizFormProps> {
+export class RegisdtrationForm extends Block<AuthorizFormProps> {
   static componentName = "RegisdtrationForm";
   protected template = `<div class="main">
   <h1 class="main__title">Вход</h1>
-  <form action="" method="get" class="main-form">
+  <form action="" method="get" class="main-form" id="auth-form">
 {{#each registration.input}}
 {{{InputForm type=this.type name=this.name ref=this.ref label=this.label}}}
     {{/each}}
     <div class="main-form__button-box">
       {{ButtonForm  button=registration.button}}
-         {{{Link  link=registration.link}}}
+         {{{Link  link=registration.link href='/'}}}
     </div>
   </form>
 </div>
@@ -51,13 +53,13 @@ export class RegisdtrationForm extends Block <AuthorizFormProps> {
     });
   }
 
-  private handleSubmit(event: Event): void {
+  private async handleSubmit(event: Event): Promise<void> {
     event.preventDefault();
 
     let isValid = true;
     const formData: Record<string, string> = {};
 
-    // Валидируем все поля и собираем данные
+    // Валидируем все поля
     this.inputFields.forEach((field, name) => {
       const fieldIsValid = field.validate();
       if (!fieldIsValid) {
@@ -66,13 +68,27 @@ export class RegisdtrationForm extends Block <AuthorizFormProps> {
       formData[name] = field.getValue();
     });
 
-    if (isValid) {
-      // Выводим в консоль объект со всеми заполненными полями
-      console.log("Данные формы:", formData);
-      console.log("Все заполненные поля:", JSON.stringify(formData, null, 2));
+    // Добавить проверку совпадения паролей
+    const passwordsMatch = this.validatePasswordMatch();
+    if (!passwordsMatch) {
+      isValid = false;
+    }
 
-      // Здесь можно отправить данные на сервер
-      // this.submitForm(formData);
+    if (isValid) {
+      const authAPI = new AuthAPI();
+      const body: SignUpRequest = {
+        first_name: formData.first_name,
+        second_name: formData.second_name,
+        login: formData.login,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone,
+      };
+      const response = await authAPI.signup(body);
+      if (response) {
+        const router = getRouter();
+        router.go("/messenger");
+      }
     } else {
       console.log("Форма содержит ошибки, исправьте их перед отправкой");
     }
@@ -103,6 +119,23 @@ export class RegisdtrationForm extends Block <AuthorizFormProps> {
     this.inputFields.forEach((field) => {
       field.clearError();
     });
+  }
+
+  private validatePasswordMatch(): boolean {
+    const passwordField = this.inputFields.get("password");
+    const confirmPasswordField = this.inputFields.get("tow-password");
+
+    if (passwordField && confirmPasswordField) {
+      const password = passwordField.getValue();
+      const confirmPassword = confirmPasswordField.getValue();
+
+      if (password !== confirmPassword) {
+        // Показываем ошибку под полем подтверждения пароля
+        confirmPasswordField.showCustomError("Пароли не совпадают");
+        return false;
+      }
+    }
+    return true;
   }
 
   protected componentWillUnmount(): void {
