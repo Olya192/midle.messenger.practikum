@@ -10,10 +10,11 @@ import { InputForm } from './src/components/input/InputForm.ts';
 import { InputProfile } from './src/components/input/InputProfile.ts';
 import { Link } from './src/components/link/Link.ts';
 import { MessagesCard } from './src/components/messegCard/MessagesCard.ts';
+import { AddChatModal } from './src/components/modal/AddChatModal.ts';
 import { registerComponent } from './src/framework/ComponentRegistry.ts';
 import { authorization, registration } from './src/mock/authorization.ts';
 import { mockContacts, mockData, mockMessages } from './src/mock/chats.ts';
-import { passwordRedact, profile, profileRedact } from './src/mock/profile.ts';
+import { profile, profileRedact } from './src/mock/profile.ts';
 import { AutorizationPage } from './src/pages/autorizationPage/autorizationPage.ts';
 import { ChatsPage } from './src/pages/chatsPage/ChatsPage.ts';
 import { Error404 } from './src/pages/errors/404errorPage.ts';
@@ -34,6 +35,7 @@ registerComponent(AuthorizForm);
 registerComponent(ButtonBack);
 registerComponent(RegisdtrationForm);
 registerComponent(Footer);
+registerComponent(AddChatModal);
 
 registerComponent(ChatsPage);
 registerComponent(AutorizationPage);
@@ -52,7 +54,6 @@ const appProps = {
   mockData: mockData,
   profile: profile,
   profileRedact: profileRedact,
-  passwordRedact: passwordRedact
 };
 
 // Запускаем приложение

@@ -1,5 +1,11 @@
 import Handlebars from "handlebars";
-import type { BaseProps, FieldType } from "../types/type";
+import type {
+  BaseProps,
+  Chat,
+  DeepClean,
+  FieldType,
+  Message,
+} from "../types/type";
 import type { AuthService } from "../mock/authorization";
 import type { Contacts, Messages, MockData } from "../mock/chats";
 import type { Profile, Redact } from "../mock/profile";
@@ -37,8 +43,14 @@ export interface BlockOwnProps extends BaseProps {
   userName?: string;
   profileRedact?: Redact[];
   passwordRedact?: Redact[];
-  _updateKey?: number; // Добавляем для форсирования обновления
-   _timestamp?: number;
+  avatarUrl?: string;
+  chats?: Chat[];
+  selectedChat?: Chat;
+  messages?: Message[];
+  currentChatAvatar?: string;
+  currentChatTitle?: string;
+  onChatClick?: (chatId: number) => void;
+  attachEvents?: (data: any) => void;
 }
 
 type EventListType = Partial<
@@ -147,10 +159,12 @@ export default abstract class Block<
     this.unmountComponent();
 
     // Очищаем детей
+
     this.children = [];
     this.refs = {};
 
     const fragment = this.compile();
+    console.log("console.log(fragment);", fragment);
     if (fragment) {
       if (oldElement && oldElement.parentNode) {
         // Заменяем старый элемент новым
@@ -168,10 +182,12 @@ export default abstract class Block<
   }
 
   protected compile(): Element | null {
+    // Создаем безопасную копию props для Handlebars
     const html = Handlebars.compile(this.template)(this.props);
     const templateElement = document.createElement("template");
     templateElement.innerHTML = html;
     const fragment = templateElement.content;
+    console.log("this.props.__children", this.props.__children);
     if (this.props.__children) {
       this.children = this.props.__children.map((child) => child.component);
 
@@ -179,7 +195,7 @@ export default abstract class Block<
         child.embed(fragment);
       });
     }
-
+    console.log("this.children", this.children);
     const defaultRefs = this.props.__refs ?? {};
 
     this.refs = Array.from(fragment.querySelectorAll("[ref]")).reduce(
@@ -189,9 +205,49 @@ export default abstract class Block<
         element.removeAttribute("ref");
         return list;
       },
-      defaultRefs,
+      defaultRefs as Record<string, Element>,
     );
 
+    if (this.props.attachEvents) {
+      this.props.attachEvents(templateElement.content.firstElementChild);
+    }
+
     return templateElement.content.firstElementChild;
+  }
+
+  private createSafeProps(): DeepClean<Props> {
+    const safeProps = {} as DeepClean<Props>;
+    console.log("this.props", this.props);
+    for (const key in this.props) {
+      const value = this.props[key];
+
+      // Пропускаем функции
+      if (typeof value === "function") {
+        continue;
+      }
+
+      // Рекурсивно очищаем вложенные объекты
+      if (value && typeof value === "object" && !Array.isArray(value)) {
+        try {
+          (safeProps as Record<string, unknown>)[key] = JSON.parse(
+            JSON.stringify(value),
+          );
+        } catch {
+          (safeProps as Record<string, unknown>)[key] = {};
+        }
+      } else if (Array.isArray(value)) {
+        try {
+          (safeProps as Record<string, unknown>)[key] = JSON.parse(
+            JSON.stringify(value),
+          );
+        } catch {
+          (safeProps as Record<string, unknown>)[key] = [];
+        }
+      } else {
+        (safeProps as Record<string, unknown>)[key] = value;
+      }
+    }
+    console.log("this.safeProps", safeProps);
+    return safeProps;
   }
 }

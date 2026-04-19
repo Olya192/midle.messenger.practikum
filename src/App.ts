@@ -52,12 +52,16 @@ interface FormProps extends BlockOwnProps {
   mockData?: MockData;
   profile?: Profile[];
   profileRedact?: Redact[] | undefined;
-  passwordRedact?: Redact[] | undefined;
 }
 
 Handlebars.registerHelper("eq", function (a, b) {
   return a === b;
 });
+
+Handlebars.registerHelper('stringifyFunc', function(fn) {
+    return new Handlebars.SafeString("(" + fn.toString() + ")()");
+});
+
 
 // registerComponent(InputForm);
 // registerComponent(ButtonForm);
@@ -138,7 +142,6 @@ export default class App extends Block<FormProps> {
       return new ProfilePage({
         profile: this.props.profile,
         profileRedact: this.props.profileRedact,
-        passwordRedact: this.props.passwordRedact,
         inputContent: "profile", // начальное состояние
       });
     };

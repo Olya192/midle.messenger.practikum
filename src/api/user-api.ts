@@ -12,12 +12,14 @@ export interface ChangeProfileRequest {
 }
 
 interface UserData {
+  id: number;
   first_name: string;
   second_name: string;
   display_name: string;
   login: string;
   email: string;
   phone: string;
+  avatar: string;
 }
 
 const userAPIInstance = new HTTPTransport({
@@ -26,6 +28,14 @@ const userAPIInstance = new HTTPTransport({
   defaultHeaders: {
     "Content-Type": "application/json",
   },
+  defaultTimeout: 10000,
+});
+
+// Создаем отдельный экземпляр для загрузки файлов (без Content-Type)
+const avatarAPIInstance = new HTTPTransport({
+  baseURL: "https://ya-praktikum.tech/api/v2",
+  defaultCredentials: "include",
+  defaultHeaders: {}, // Пустые заголовки по умолчанию
   defaultTimeout: 10000,
 });
 
@@ -59,5 +69,26 @@ export class UserAPI extends BaseAPI {
     return userAPIInstance.post("/user/search", {
       data: { login },
     });
+  }
+
+  // Новый метод для загрузки аватара
+  async changeAvatar(avatarFile: File): Promise<UserData> {
+    const formData = new FormData();
+    formData.append("avatar", avatarFile);
+
+    // Используем avatarAPIInstance без Content-Type заголовка
+    const response = await avatarAPIInstance.put<UserData>(
+      "/user/profile/avatar",
+      {
+        data: formData,
+        headers: {
+          // Не устанавливаем Content-Type - браузер сам установит multipart/form-data с boundary
+        },
+      },
+    );
+
+    // Обновляем стор с новыми данными пользователя
+    Store.setUser(response);
+    return response;
   }
 }

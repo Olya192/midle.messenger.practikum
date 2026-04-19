@@ -1,6 +1,7 @@
 import HTTPTransport from "../modules/HTTPTransport";
 import { BaseAPI } from "../modules/http/base-api";
 import Store from "../store/Store";
+import { ChatAPI } from "./chat-api";
 
 export interface SignUpRequest {
   first_name: string;
@@ -42,17 +43,13 @@ export class AuthAPI extends BaseAPI {
         data: userData,
       })
       .then((response) => {
-        // После успешной регистрации получаем данные пользователя
         return this.getUser().then((userData) => {
-          // Сохраняем данные пользователя в стор
           Store.setState("user", userData);
           Store.setState("isAuthenticated", true);
-          // Возвращаем ответ с id пользователя
           return response;
         });
       })
       .catch((error) => {
-        // В случае ошибки очищаем данные пользователя
         Store.setState("user", null);
         Store.setState("isAuthenticated", false);
         throw error;
@@ -65,26 +62,34 @@ export class AuthAPI extends BaseAPI {
         data: loginData,
       })
       .then(() => {
-        // После успешного входа получаем данные пользователя
         return this.getUser().then((userData) => {
-          // Сохраняем данные пользователя в стор
           Store.setState("user", userData);
           Store.setState("isAuthenticated", true);
-          
+          this.loadInitialChats();
+
           return userData;
         });
       })
       .catch((error) => {
-        // В случае ошибки очищаем данные пользователя
         Store.setState("user", null);
         Store.setState("isAuthenticated", false);
         throw error;
       });
   }
 
+  private async loadInitialChats() {
+    try {
+      const chatAPI = new ChatAPI();
+      const chats = await chatAPI.getChats({ offset: 0, limit: 100 });
+      console.log("Чаты загружены после авторизации:", chats);
+      Store.setState("chats", chats);
+    } catch (error) {
+      console.error("Ошибка при загрузке чатов после авторизации:", error);
+    }
+  }
+
   logout() {
     return authAPIInstance.post("/auth/logout").then(() => {
-      // Очищаем стор при выходе
       Store.setState("user", null);
       Store.setState("isAuthenticated", false);
     });
@@ -94,7 +99,9 @@ export class AuthAPI extends BaseAPI {
     return authAPIInstance.get("/auth/user");
   }
 
-  // Метод для обновления данных пользователя в сторе
+
+
+  
   async refreshUserData(): Promise<UserData> {
     const userData = await this.getUser();
     Store.setState("user", userData);

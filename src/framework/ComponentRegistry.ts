@@ -11,12 +11,14 @@ function registerComponent<TProps extends BlockOwnProps>(Component: {
 }) {
   const dataAttribute = `data-component-hbs-id="${++uniqueId}"`;
 
+  console.log(`data-component-hbs-id=""`,dataAttribute)
+
   Handlebars.registerHelper(
     Component.componentName,
     function (this: unknown, { hash, data }: HelperOptions) {
      
       const component = new Component(hash);
-
+  console.log(`component`,component)
       if ("ref" in hash) {
         (data.root.__refs = data.root.__refs || {})[hash.ref] =
           component.element();
@@ -25,30 +27,26 @@ function registerComponent<TProps extends BlockOwnProps>(Component: {
       (data.root.__children = data.root.__children || []).push({
         component,
         embed(node: DocumentFragment) {
-          // Ищем placeholder во фрагменте
+           console.log(`placeholder`)
           const placeholder = node.querySelector(`[${dataAttribute}]`);
-
-          // Если не нашли во фрагменте, возможно компонент уже вмонтирован
+  console.log(`placeholder`,placeholder)
           if (!placeholder) {
-            // Пытаемся найти уже существующий элемент компонента в DOM
             const existingElement = component.element();
             if (existingElement && existingElement.parentNode) {
-              // Компонент уже в DOM, ничего не делаем
               return;
             }
-
-            // Если компонент не в DOM, но placeholder не найден - ошибка
             throw new Error(
               `Can't find data-id for component ${Component.componentName}`,
             );
           }
 
           const element = component.element();
+  console.log(`element `,element )
+          
           if (!element) {
             throw new Error("Component element is not created");
           }
 
-          // Проверяем, не заменен ли уже placeholder
           if (placeholder.parentNode) {
             placeholder.replaceWith(element);
           }
