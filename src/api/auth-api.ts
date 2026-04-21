@@ -1,5 +1,4 @@
 import HTTPTransport from "../modules/HTTPTransport";
-import { BaseAPI } from "../modules/http/base-api";
 import Store from "../store/Store";
 import { ChatAPI } from "./chat-api";
 
@@ -36,7 +35,7 @@ const authAPIInstance = new HTTPTransport({
   defaultTimeout: 10000,
 });
 
-export class AuthAPI extends BaseAPI {
+export class AuthAPI {
   signup(userData: SignUpRequest): Promise<SignUpResponse> {
     return authAPIInstance
       .post<SignUpResponse>("/auth/signup", {

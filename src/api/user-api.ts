@@ -1,4 +1,3 @@
-import { BaseAPI } from "../modules/http/base-api";
 import HTTPTransport from "../modules/HTTPTransport";
 import Store from "../store/Store";
 
@@ -39,7 +38,7 @@ const avatarAPIInstance = new HTTPTransport({
   defaultTimeout: 10000,
 });
 
-export class UserAPI extends BaseAPI {
+export class UserAPI {
   changeProfile(userData: ChangeProfileRequest): Promise<UserData> {
     return userAPIInstance
       .put<UserData>("/user/profile", {

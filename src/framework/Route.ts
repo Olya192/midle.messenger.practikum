@@ -34,6 +34,10 @@ export default class Route {
     }
   }
 
+  public getRootElement(): Element | null {
+    return this._rootElement;
+  }
+
   public match(pathname: string): boolean {
     return isEqual(pathname, this._pathname);
   }

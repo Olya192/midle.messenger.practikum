@@ -52,7 +52,7 @@ export class ProfilePage extends Block<ProfilePageProps> {
   private dataLoaded = false;
   private isUpdating = false;
   private isLoading = false; // Флаг для предотвращения множественных запросов
-  private lastUserData: string = ""; // Для сравнения данных
+  // private lastUserData: string = ""; // Для сравнения данных
  // Флаг для предотвращения рекурсии
 
   protected template = `  <main class="profile">

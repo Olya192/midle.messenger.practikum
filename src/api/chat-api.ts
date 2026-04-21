@@ -1,8 +1,7 @@
-import { BaseAPI } from "../modules/http/base-api";
 import HTTPTransport from "../modules/HTTPTransport";
 import Store from "../store/Store";
 
- export interface ChatUser {
+export interface ChatUser {
   id: number;
   first_name: string;
   second_name: string;
@@ -11,7 +10,7 @@ import Store from "../store/Store";
   email: string;
   phone: string;
   avatar: string;
-  role: 'admin' | 'regular';
+  role: "admin" | "regular";
 }
 
 export interface LastMessage {
@@ -106,13 +105,11 @@ const chatAPIInstance = new HTTPTransport({
   defaultTimeout: 10000,
 });
 
-export class ChatAPI extends BaseAPI {
-
-  
+export class ChatAPI {
   // GET /chats - Получить список чатов
   getChats(params: GetChatsParams = {}): Promise<Chat[]> {
     const queryParams: Record<string, string> = {};
-    
+
     if (params.offset !== undefined) {
       queryParams.offset = String(params.offset);
     }
@@ -122,11 +119,12 @@ export class ChatAPI extends BaseAPI {
     if (params.title !== undefined) {
       queryParams.title = params.title;
     }
-    
-    const queryString = Object.keys(queryParams).length > 0 
-      ? `?${new URLSearchParams(queryParams).toString()}` 
-      : '';
-    
+
+    const queryString =
+      Object.keys(queryParams).length > 0
+        ? `?${new URLSearchParams(queryParams).toString()}`
+        : "";
+
     return chatAPIInstance.get<Chat[]>(`/chats${queryString}`);
   }
 
@@ -145,9 +143,12 @@ export class ChatAPI extends BaseAPI {
   }
 
   // GET /chats/{id}/users - Получить пользователей чата
-  getChatUsers(chatId: number, params: GetChatUsersParams = {}): Promise<ChatUser[]> {
+  getChatUsers(
+    chatId: number,
+    params: GetChatUsersParams = {},
+  ): Promise<ChatUser[]> {
     const queryParams: Record<string, string> = {};
-    
+
     if (params.offset !== undefined) {
       queryParams.offset = String(params.offset);
     }
@@ -160,12 +161,15 @@ export class ChatAPI extends BaseAPI {
     if (params.email !== undefined) {
       queryParams.email = params.email;
     }
-    
-    const queryString = Object.keys(queryParams).length > 0 
-      ? `?${new URLSearchParams(queryParams).toString()}` 
-      : '';
-    
-    return chatAPIInstance.get<ChatUser[]>(`/chats/${chatId}/users${queryString}`);
+
+    const queryString =
+      Object.keys(queryParams).length > 0
+        ? `?${new URLSearchParams(queryParams).toString()}`
+        : "";
+
+    return chatAPIInstance.get<ChatUser[]>(
+      `/chats/${chatId}/users${queryString}`,
+    );
   }
 
   // PUT /chats/users - Добавить пользователей в чат
@@ -195,9 +199,9 @@ export class ChatAPI extends BaseAPI {
   // PUT /chats/avatar - Обновить аватар чата
   updateChatAvatar(chatId: number, avatar: File): Promise<Chat> {
     const formData = new FormData();
-    formData.append('chatId', String(chatId));
-    formData.append('avatar', avatar);
-    
+    formData.append("chatId", String(chatId));
+    formData.append("avatar", avatar);
+
     return chatAPIInstance.put<Chat>("/chats/avatar", {
       data: formData,
     });
@@ -216,7 +220,9 @@ export class ChatAPI extends BaseAPI {
     return users;
   }
 
-  async createChatAndRefresh(data: CreateChatRequest): Promise<CreateChatResponse> {
+  async createChatAndRefresh(
+    data: CreateChatRequest,
+  ): Promise<CreateChatResponse> {
     const response = await this.createChat(data);
     // Обновляем список чатов после создания нового
     await this.refreshChatsList();
@@ -240,12 +246,12 @@ export class ChatAPI extends BaseAPI {
   }
 
   update() {
-    throw new Error("Method not implemented. Use specific methods like updateChatAvatar");
+    throw new Error(
+      "Method not implemented. Use specific methods like updateChatAvatar",
+    );
   }
 
   // delete(data: DeleteChatRequest) {
   //   return this.deleteChat(data);
   // }
 }
-
-
