@@ -1,3 +1,4 @@
+import { BaseAPI } from "../modules/http/base-api";
 import HTTPTransport from "../modules/HTTPTransport";
 import Store from "../store/Store";
 
@@ -105,7 +106,7 @@ const chatAPIInstance = new HTTPTransport({
   defaultTimeout: 10000,
 });
 
-export class ChatAPI {
+export class ChatAPI extends BaseAPI{
   // GET /chats - Получить список чатов
   getChats(params: GetChatsParams = {}): Promise<Chat[]> {
     const queryParams: Record<string, string> = {};
