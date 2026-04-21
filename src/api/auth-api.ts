@@ -46,6 +46,7 @@ export class AuthAPI extends BaseAPI {
         return this.getUser().then((userData) => {
           Store.setState("user", userData);
           Store.setState("isAuthenticated", true);
+          localStorage.setItem("user", "user");
           return response;
         });
       })
@@ -66,7 +67,7 @@ export class AuthAPI extends BaseAPI {
           Store.setState("user", userData);
           Store.setState("isAuthenticated", true);
           this.loadInitialChats();
-
+          localStorage.setItem("user", "user");
           return userData;
         });
       })
@@ -92,6 +93,7 @@ export class AuthAPI extends BaseAPI {
     return authAPIInstance.post("/auth/logout").then(() => {
       Store.setState("user", null);
       Store.setState("isAuthenticated", false);
+      localStorage.clear();
     });
   }
 
@@ -99,9 +101,6 @@ export class AuthAPI extends BaseAPI {
     return authAPIInstance.get("/auth/user");
   }
 
-
-
-  
   async refreshUserData(): Promise<UserData> {
     const userData = await this.getUser();
     Store.setState("user", userData);

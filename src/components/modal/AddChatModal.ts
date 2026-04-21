@@ -4,7 +4,6 @@ import type { BlockOwnProps } from "../../framework/Block";
 import Block from "../../framework/Block";
 import Store from "../../store/Store";
 
-
 // Используем правильный тип пользователя
 interface ChatUser {
   id: number;
@@ -28,25 +27,18 @@ interface AddChatModalProps extends BlockOwnProps {
   searchResults?: SearchResultUser[];
   canCreate?: boolean;
   selectedUserId?: number;
-  onSearch?: () => void;
-  onSelectUser?: (e: Event) => void;
-  onCreateChat?: () => void;
-  preventClose?: (e: Event) => void;
 }
 
 export class AddChatModal extends Block<AddChatModalProps> {
   static componentName = "AddChatModal";
-  
+
   private userAPI = new UserAPI();
   private chatAPI = new ChatAPI();
-  private foundUsers: ChatUser[] = [];
 
   protected template = `
-    <div class="modal-overlay" onclick={{onClose}}>
-      <div class="modal" onclick={{preventClose}}>
+      <div class="modal">
         <div class="modal__header">
           <h2>Создать новый чат</h2>
-          <button class="modal__close" onclick={{onClose}}>×</button>
         </div>
         
         <div class="modal__body">
@@ -57,41 +49,15 @@ export class AddChatModal extends Block<AddChatModalProps> {
               class="modal__input"
               id="user-search-input"
             />
-            <button class="modal__search-btn" onclick={{onSearch}}>Найти</button>
           </div>
-          
-          {{#if searchResults}}
-            {{#if searchResults.length}}
-              <div class="modal__results">
-                <h3>Результаты поиска:</h3>
-                <div class="modal__users-list">
-                  {{#each searchResults}}
-                    <div class="modal__user-item {{#if selected}}modal__user-item--selected{{/if}}" onclick={{../onSelectUser}} data-user-id="{{id}}">
-                      <img src="{{#if avatar}}https://ya-praktikum.tech/api/v2/resources{{avatar}}{{else}}../../../public/default-avatar.svg{{/if}}" alt="{{login}}" class="modal__user-avatar">
-                      <div class="modal__user-info">
-                        <p class="modal__user-name">{{first_name}} {{second_name}}</p>
-                        <p class="modal__user-login">@{{login}}</p>
-                      </div>
-                    </div>
-                  {{/each}}
-                </div>
-              </div>
-            {{/if}}
-          {{/if}}
-          
-          {{#if error}}
-            <div class="modal__error">{{error}}</div>
-          {{/if}}
-        </div>
+              
         
         <div class="modal__footer">
-          <button class="modal__btn modal__btn--secondary" onclick={{onClose}}>Отмена</button>
-          <button class="modal__btn modal__btn--primary" onclick={{onCreateChat}} {{#unless canCreate}}disabled{{/unless}}>
+           <button class="modal__btn modal__btn--primary" data-action='modal__search-btn'>
             Создать чат
           </button>
         </div>
       </div>
-    </div>
   `;
 
   constructor(props: AddChatModalProps = {} as AddChatModalProps) {
@@ -101,19 +67,35 @@ export class AddChatModal extends Block<AddChatModalProps> {
       error: props.error ?? "",
       canCreate: props.canCreate ?? false,
       selectedUserId: props.selectedUserId ?? undefined,
-      onSearch: () => this.handleSearch(),
-      onSelectUser: (e: Event) => this.handleSelectUser(e),
-      onCreateChat: () => this.handleCreateChat(),
-      preventClose: (e: Event) => e.stopPropagation(),
     } as AddChatModalProps);
   }
 
+  protected events = {
+    click: (e: Event) => {
+      const target = e.target as HTMLElement;
+      const action = target.getAttribute("data-action");
+
+      switch (action) {
+        case "modal__search-btn":
+          this.handleSearch();
+          break;
+
+        default:
+          break;
+      }
+    },
+  };
+
   private async handleSearch(): Promise<void> {
-    const input = document.getElementById("user-search-input") as HTMLInputElement;
+    const input = document.getElementById(
+      "user-search-input",
+    ) as HTMLInputElement;
+    console.log("handleSearch input", input);
     const login = input?.value.trim();
-    
+    console.log("handleSearch login", login);
     if (!login) {
       this.props.error = "Введите логин пользователя";
+
       this.render();
       return;
     }
@@ -121,10 +103,12 @@ export class AddChatModal extends Block<AddChatModalProps> {
     try {
       this.props.error = "";
       this.props.searchResults = [];
+
       this.render();
-      
-      const users = await this.userAPI.searchUsers(login) as ChatUser[];
-      
+
+      const users = (await this.userAPI.searchUsers(login)) as ChatUser[];
+      console.log("handleSearch users", users);
+
       if (users.length === 0) {
         this.props.error = "Пользователи не найдены";
         this.props.searchResults = [];
@@ -133,17 +117,18 @@ export class AddChatModal extends Block<AddChatModalProps> {
         return;
       }
 
-      this.foundUsers = users;
-      
-      const searchResults: SearchResultUser[] = users.map((user: ChatUser) => ({
-        ...user,
-        selected: false
-      }));
+      const createChatResponse = await this.chatAPI.createChat({
+        title: users[0].login,
+      });
 
-      this.props.searchResults = searchResults;
-      this.props.error = "";
-      this.props.canCreate = false;
-      this.props.selectedUserId = undefined;
+      await this.chatAPI.addUsersToChat({
+        users: [users[0].id],
+        chatId: createChatResponse.id,
+      });
+
+      const chats = await this.chatAPI.getChats({ offset: 0, limit: 100 });
+      Store.setState("chats", chats);
+
       this.render();
       
     } catch (error) {
@@ -151,75 +136,10 @@ export class AddChatModal extends Block<AddChatModalProps> {
       this.props.error = "Ошибка при поиске пользователей";
       this.props.searchResults = [];
       this.props.canCreate = false;
+      console.log("handleSearch error RENDER");
       this.render();
     }
   }
 
-  private handleSelectUser(e: Event): void {
-    const target = e.currentTarget as HTMLElement;
-    const userId = Number(target.dataset.userId);
-    
-    if (!userId) return;
-
-    const currentSearchResults = this.props.searchResults || [];
-    
-    const searchResults = currentSearchResults.map((user: SearchResultUser) => ({
-      ...user,
-      selected: user.id === userId
-    }));
-
-    this.props.searchResults = searchResults;
-    this.props.canCreate = true;
-    this.props.error = "";
-    this.props.selectedUserId = userId;
-    this.render();
-  }
-
-  private async handleCreateChat(): Promise<void> {
-    const selectedUserId = this.props.selectedUserId;
-    
-    if (!selectedUserId) {
-      this.props.error = "Выберите пользователя";
-      this.render();
-      return;
-    }
-
-    const selectedUser = this.foundUsers.find((u: ChatUser) => u.id === selectedUserId);
-    
-    if (!selectedUser) {
-      this.props.error = "Пользователь не найден";
-      this.render();
-      return;
-    }
-
-    try {
-      const currentUser = Store.getUser();
-      const chatTitle = `${currentUser?.first_name || 'Чат'} и ${selectedUser.first_name}`;
-      
-      const createChatResponse = await this.chatAPI.createChat({
-        title: chatTitle
-      });
-
-      await this.chatAPI.addUsersToChat({
-        users: [selectedUser.id],
-        chatId: createChatResponse.id
-      });
-
-      const chats = await this.chatAPI.getChats({ offset: 0, limit: 100 });
-      Store.setState("chats", chats);
-
-      if (this.props.onChatCreated) {
-        this.props.onChatCreated();
-      }
-
-      if (this.props.onClose) {
-        this.props.onClose();
-      }
-
-    } catch (error) {
-      console.error("Ошибка при создании чата:", error);
-      this.props.error = "Ошибка при создании чата. Попробуйте позже.";
-      this.render();
-    }
-  }
+  
 }

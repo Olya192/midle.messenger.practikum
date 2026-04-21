@@ -50,7 +50,6 @@ export interface BlockOwnProps extends BaseProps {
   currentChatAvatar?: string;
   currentChatTitle?: string;
   onChatClick?: (chatId: number) => void;
-  attachEvents?: (data: any) => void;
 }
 
 type EventListType = Partial<
@@ -80,26 +79,39 @@ export default abstract class Block<
 
   public element(): Element | null {
     if (!this.domElement) {
+      console.log("ререндерим element");
       this.render();
     }
     return this.domElement;
   }
 
   public setProps(props: Partial<Props>) {
+    // Проверяем, изменились ли реально props
+    let hasChanges = false;
+    for (const key in props) {
+      if (this.props[key as keyof Props] !== props[key as keyof Props]) {
+        hasChanges = true;
+        break;
+      }
+    }
+
+    if (!hasChanges) return;
+
     const oldProps = { ...this.props };
     this.props = { ...this.props, ...props } as Props;
 
-    // Добавляем проверку, действительно ли изменились props
+    console.log("oldProps", oldProps);
+    console.log("props", props);
+
     if (this.shouldUpdate(oldProps, this.props)) {
+      console.log("ререндерим setProps");
       this.render();
     }
   }
 
   protected shouldUpdate(oldProps: Props, newProps: Props): boolean {
-    // Исключаем служебные поля из сравнения
     const excludeKeys = ["__children", "__refs"];
 
-    // Собираем все ключи из обоих объектов
     const allKeys = new Set([
       ...Object.keys(oldProps).filter((key) => !excludeKeys.includes(key)),
       ...Object.keys(newProps).filter((key) => !excludeKeys.includes(key)),
@@ -153,11 +165,12 @@ export default abstract class Block<
   }
 
   protected render() {
+    console.log("block render");
     // Сохраняем старый DOM элемент
     const oldElement = this.domElement;
-
+    console.log("block oldElement", oldElement);
     this.unmountComponent();
-
+    console.log("block unmount");
     // Очищаем детей
 
     this.children = [];
@@ -180,6 +193,7 @@ export default abstract class Block<
 
     this.mountComponent();
   }
+
 
   protected compile(): Element | null {
     // Создаем безопасную копию props для Handlebars
@@ -207,10 +221,6 @@ export default abstract class Block<
       },
       defaultRefs as Record<string, Element>,
     );
-
-    if (this.props.attachEvents) {
-      this.props.attachEvents(templateElement.content.firstElementChild);
-    }
 
     return templateElement.content.firstElementChild;
   }

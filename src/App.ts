@@ -131,11 +131,7 @@ export default class App extends Block<FormProps> {
     };
 
     const createChatsPage = (): Block<BlockOwnProps> => {
-      return new ChatsPage({
-        mockContacts: this.props.mockContacts,
-        mockMessages: this.props.mockMessages,
-        mockData: this.props.mockData,
-      });
+      return new ChatsPage();
     };
 
     const createProfilePage = (): Block<BlockOwnProps> => {

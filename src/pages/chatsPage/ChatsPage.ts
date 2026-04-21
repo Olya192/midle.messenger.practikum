@@ -1,5 +1,7 @@
 import { ChatAPI } from "../../api/chat-api";
+import { UserAPI } from "../../api/user-api";
 import Block, { type BlockOwnProps } from "../../framework/Block";
+import Store from "../../store/Store";
 
 interface ApiChatUser {
   id: number;
@@ -92,7 +94,6 @@ interface ChatsPageProps extends BlockOwnProps {
   onAddChat?: () => void;
   onCloseModal?: () => void;
   onChatCreated?: () => void;
-  attachEvents?: (data: any) => void;
   displayMessages?: DisplayMessage[];
   displayChats?: DisplayChat[];
   safeChats?: SafeChat[];
@@ -101,11 +102,16 @@ interface ChatsPageProps extends BlockOwnProps {
   safeCurrentChatAvatar?: string;
   safeCurrentChatTitle?: string;
   currentDisplayChat?: DisplayChat;
+  showAddUserModal: boolean;
+  UserActiveTitle: string;
+  showUserActiveModal: boolean;
 }
 
 export class ChatsPage extends Block<ChatsPageProps> {
   static componentName = "ChatsPage";
   private chatAPI = new ChatAPI();
+  private userAPI = new UserAPI();
+  private unsubscribeFromStore: (() => void) | null = null;
 
   // Добавляем флаг для предотвращения множественных рендеров
   private isRendering = false;
@@ -205,9 +211,9 @@ export class ChatsPage extends Block<ChatsPageProps> {
       this.props.currentChatTitle || "Выберите чат";
   }
 
-  // Переопределяем render для очистки данных перед рендерингом
   protected render(): void {
-    // Предотвращаем рекурсивные вызовы
+    console.log("chats render");
+
     if (this.isRendering) {
       return;
     }
@@ -215,6 +221,7 @@ export class ChatsPage extends Block<ChatsPageProps> {
     this.isRendering = true;
 
     try {
+      console.log("chats render ok");
       this.createTemplateData();
       super.render();
     } finally {
@@ -251,7 +258,12 @@ export class ChatsPage extends Block<ChatsPageProps> {
     <div class="messages__header">
        <img src="{{safeCurrentChatAvatar}}" alt="Avatar" class="messages__avatar">
        <p>{{safeCurrentChatTitle}}</p>
-       <img src="../../../public/Group 194.svg" alt="More" class="messages__more">
+       <img src="../../../public/Group 194.svg" alt="More" class="messages__more" id='user-bar'>
+<div class="user-active" id="user-active">
+<p class="user-active__action" id='add-user'>Добавить пользователя</p>
+<p class="user-active__action" id='del-user'>Удалить пользователя</p>
+</div>
+
     </div>
     <section class="messages__cards">
         {{#each safeMessages}}
@@ -276,27 +288,36 @@ export class ChatsPage extends Block<ChatsPageProps> {
     </form>
     {{/if}}
   </div>
-  
-  {{#if showAddChatModal}}
-    <div class="modal-overlay" onclick={{onCloseModal}}>
-      <div class="modal" onclick="event.stopPropagation()">
-        {{{AddChatModal 
-          onClose=onCloseModal 
-          onChatCreated=onChatCreated
-        }}}
+  <div class="modal-overlay" id='modal-overlay'>
+        {{{AddChatModal}}}
+    </div>
+      <div class="modal-overlay" id='user-active-modal'>
+        <div class="modal">
+        <div class="modal__header">
+          <h2>{{UserActiveTitle}} пользователя</h2>
+        </div>
+        
+        <div class="modal__body">
+          <div class="modal__search">
+            <input 
+              type="text" 
+              placeholder="Введите логин пользователя" 
+              class="modal__input"
+              id="user-search-input"
+            />
+          </div>
+              
+        
+        <div class="modal__footer">
+           <button class="modal__btn modal__btn--primary" id='modal__user-active-btn'>
+           {{UserActiveTitle}}
+          </button>
+        </div>
       </div>
     </div>
-  {{/if}}
 </main>`;
 
   constructor(props: ChatsPageProps = {} as ChatsPageProps) {
-    // Привязываем методы к экземпляру
-    const handleAddChat = () => this.handleAddChat();
-    const handleCloseModal = () => this.handleCloseModal();
-    const handleChatCreated = () => this.handleChatCreated();
-    const handleChatClick = (chatId: number) => this.handleChatSelect(chatId);
-    const attachEvents = (fragment: any) => this.attachEvents(fragment);
-
     const initialProps: ChatsPageProps = {
       ...props,
       safeChats: [],
@@ -307,33 +328,70 @@ export class ChatsPage extends Block<ChatsPageProps> {
       displayMessages: [],
       displayChats: [],
       showAddChatModal: false,
-      // Передаем привязанные функции
-      onAddChat: handleAddChat,
-      onCloseModal: handleCloseModal,
-      onChatCreated: handleChatCreated,
-      onChatClick: handleChatClick,
-      attachEvents: attachEvents,
+      showAddUserModal: false,
+      UserActiveTitle: "",
+      showUserActiveModal: false,
     };
 
     super(initialProps);
   }
 
-  private attachEvents(fragment: any): void {
-    const btn = fragment.getElementById("btn-add-chat");
-    console.log("!!!!!!!!!!!!!!!!!!!!!!!!", btn);
-    btn?.addEventListener("click", () => {
-      this.handleAddChat();
-    });
-  }
+  protected events = {
+    click: (e: Event) => {
+      const target = e.target as HTMLElement;
+      const id = target?.id;
+      console.log("id", id);
+
+      const chatCard = target.closest(".chat-card");
+      if (chatCard) {
+        const chatId = chatCard.getAttribute("data-chat-id");
+        if (chatId) {
+          this.handleChatSelect(Number(chatId));
+        }
+        return;
+      }
+
+      switch (id) {
+        case "btn-add-chat":
+        case "modal-overlay":
+          this.handleAddChat();
+          break;
+        case "user-bar":
+          this.handleAddUserModal();
+          break;
+        case "add-user":
+          this.handleActiveUser("Добавить");
+          break;
+        case "del-user":
+          this.handleActiveUser("Удалить");
+          break;
+        case "user-active-modal":
+          this.handleActiveUser("");
+          break;
+        case "modal__user-active-btn":
+          this.handleUserActionButton();
+          break;
+
+        default:
+          break;
+      }
+    },
+  };
 
   private async loadChats(): Promise<void> {
     try {
+      console.log("Loading chats...");
+      const auth = localStorage.getItem("user");
+      // Проверяем, авторизован ли пользователь
+      if (!auth) {
+        console.log("User not authenticated, skipping chats load");
+        return;
+      }
+
       const rawChats = await this.chatAPI.getChats({ offset: 0, limit: 100 });
       console.log("Список чатов загружен:", rawChats);
 
-      // Очищаем данные сразу после получения
       const cleanRawChats = this.cleanData(rawChats);
-
       const apiChats: ApiChat[] = cleanRawChats.filter(this.isApiChat);
 
       const displayChats: DisplayChat[] = apiChats.map((chat) =>
@@ -341,21 +399,25 @@ export class ChatsPage extends Block<ChatsPageProps> {
       );
 
       this.props.displayChats = displayChats;
-      this.props.currentDisplayChat =
-        apiChats.length > 0 ? displayChats[0] : undefined;
-      this.props.currentChatAvatar =
-        apiChats.length > 0
-          ? apiChats[0].avatar || "../../../public/default-avatar.svg"
-          : "../../../public/default-avatar.svg";
-      this.props.currentChatTitle =
-        apiChats.length > 0 ? apiChats[0].title : "Выберите чат";
-      this.props.displayMessages = [];
 
-      // Используем setProps вместо прямого рендера
-      this.setProps({});
+      // Store.setState("chats", displayChats);
 
-      if (apiChats.length > 0) {
+      if (apiChats.length > 0 && !this.props.currentDisplayChat) {
+        this.props.currentDisplayChat = displayChats[0];
+        this.props.currentChatAvatar =
+          apiChats[0].avatar || "../../../public/default-avatar.svg";
+        this.props.currentChatTitle = apiChats[0].title;
+        this.props.displayMessages = [];
+
+        // Сохраняем выбранный чат в Store
+        Store.setState("selectedChatId", apiChats[0].id);
+
+        this.render();
+
+        // Загружаем данные первого чата
         await this.loadChatData(apiChats[0].id);
+      } else {
+        this.setProps({});
       }
     } catch (error) {
       console.error("Ошибка при загрузке чатов:", error);
@@ -367,8 +429,14 @@ export class ChatsPage extends Block<ChatsPageProps> {
       const { token } = await this.chatAPI.getChatToken(chatId);
       console.log("Токен для WebSocket получен:", token);
 
+      // Сохраняем токен в Store
+      Store.setState(`chatTokens.${chatId}`, token);
+
       const users = await this.chatAPI.getChatUsers(chatId);
       console.log("Пользователи чата:", users);
+
+      // Сохраняем пользователей чата в Store
+      Store.setState(`chatUsers.${chatId}`, users);
     } catch (error) {
       console.error("Ошибка при загрузке данных чата:", error);
     }
@@ -387,26 +455,84 @@ export class ChatsPage extends Block<ChatsPageProps> {
       this.props.currentChatTitle = selectedChat.title;
       this.props.displayMessages = [];
 
+      // Сохраняем выбранный чат в Store
+      Store.setState("selectedChatId", chatId);
+
       this.setProps({});
       this.loadChatData(chatId);
     }
   }
-
   private handleAddChat(): void {
-    console.log("все в пизду!");
+    console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+    // Прямая мутация - НЕ используем setProps
     this.props.showAddChatModal = !this.props.showAddChatModal;
-    this.setProps({});
+
+    // Вручную обновляем DOM модалки
+    const modalElement = document.getElementById("modal-overlay");
+    if (modalElement) {
+      modalElement.style.display = this.props.showAddChatModal
+        ? "flex"
+        : "none";
+    }
   }
 
-  private handleCloseModal(): void {
-    this.props.showAddChatModal = false;
-    this.setProps({});
+  private handleAddUserModal(): void {
+    // Прямая мутация - НЕ используем setProps
+    this.props.showAddUserModal = !this.props.showAddUserModal;
+
+    // Вручную обновляем DOM модалки
+    const modalElement = document.getElementById("user-active");
+    if (modalElement) {
+      modalElement.style.display = this.props.showAddUserModal
+        ? "flex"
+        : "none";
+    }
   }
 
-  private async handleChatCreated(): Promise<void> {
-    this.props.showAddChatModal = false;
-    this.setProps({});
-    await this.loadChats();
+  private handleActiveUser(title: string): void {
+    const state = Store.getState();
+    const selectedChatId = state.selectedChatId;
+    console.log("////////////////////////////", selectedChatId);
+    this.props.UserActiveTitle = title;
+    this.render();
+
+    this.props.showUserActiveModal = !this.props.showUserActiveModal;
+    const modalElement = document.getElementById("user-active-modal");
+    if (modalElement) {
+      modalElement.style.display = this.props.showUserActiveModal
+        ? "flex"
+        : "none";
+    }
+    
+    this.handleAddUserModal();
+  }
+
+  private async handleUserActionButton(): Promise<void> {
+    const state = Store.getState();
+    const selectedChatId = state.selectedChatId;
+    const input = document.getElementById(
+      "user-search-input",
+    ) as HTMLInputElement;
+    const login = input?.value.trim();
+    const users = (await this.userAPI.searchUsers(login)) as ChatUser[];
+
+    if (this.props.UserActiveTitle == "Удалить") {
+      await this.chatAPI.deleteUsersFromChat({
+        users: [users[0].id],
+        chatId: Number(selectedChatId),
+      });
+    } else {
+      await this.chatAPI.addUsersToChat({
+        users: [users[0].id],
+        chatId: Number(selectedChatId),
+      });
+    }
+    const modalElement = document.getElementById("user-active-modal");
+    if (modalElement) {
+      modalElement.style.display = this.props.showAddChatModal
+        ? "flex"
+        : "none";
+    }
   }
 
   private formatTime(timeString: string): string {
@@ -443,5 +569,27 @@ export class ChatsPage extends Block<ChatsPageProps> {
         ? this.formatTime(chat.last_message.time)
         : "",
     };
+  }
+
+  protected componentDidMount(): void {
+    console.log("ChatsPage mounted");
+
+    // Подписываемся на изменения в Store
+    this.unsubscribeFromStore = Store.subscribe(() => {
+      console.log("Store changed, reloading chats...");
+      this.loadChats();
+    });
+
+    // Загружаем чаты при монтировании компонента
+    this.loadChats();
+  }
+
+  protected componentWillUnmount(): void {
+    console.log("ChatsPage unmounting");
+    // Отписываемся от Store при размонтировании
+    if (this.unsubscribeFromStore) {
+      this.unsubscribeFromStore();
+      this.unsubscribeFromStore = null;
+    }
   }
 }

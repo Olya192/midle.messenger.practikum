@@ -38,7 +38,7 @@ registerComponent(Footer);
 registerComponent(AddChatModal);
 
 registerComponent(ChatsPage);
-registerComponent(AutorizationPage);
+registerComponent(AutorizationPage); 
 registerComponent(Error404);
 registerComponent(Error500);
 registerComponent(ProfilePage);
