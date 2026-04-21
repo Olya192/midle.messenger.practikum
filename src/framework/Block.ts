@@ -1,8 +1,13 @@
 import Handlebars from "handlebars";
-import type { BaseProps, FieldType } from "../types/type";
+import type {
+  BaseProps,
+  Chat,
+  FieldType,
+  Message,
+} from "../types/type";
 import type { AuthService } from "../mock/authorization";
 import type { Contacts, Messages, MockData } from "../mock/chats";
-import type { Profile } from "../mock/profile";
+import type { Profile, Redact } from "../mock/profile";
 
 export interface BlockOwnProps extends BaseProps {
   __children?: Array<{
@@ -33,6 +38,17 @@ export interface BlockOwnProps extends BaseProps {
   mockMessages?: Messages[];
   mockData?: MockData;
   profile?: Profile[];
+  inputContent?: string;
+  userName?: string;
+  profileRedact?: Redact[];
+  passwordRedact?: Redact[];
+  avatarUrl?: string;
+  chats?: Chat[];
+  selectedChat?: Chat;
+  messages?: Message[];
+  currentChatAvatar?: string;
+  currentChatTitle?: string;
+  onChatClick?: (chatId: number) => void;
 }
 
 type EventListType = Partial<
@@ -43,6 +59,8 @@ export default abstract class Block<
   Props extends BlockOwnProps = BlockOwnProps,
 > {
   protected abstract template: string;
+
+  static componentName: string;
 
   protected props = {} as Props;
 
@@ -60,16 +78,55 @@ export default abstract class Block<
 
   public element(): Element | null {
     if (!this.domElement) {
+      console.log("ререндерим element");
       this.render();
     }
     return this.domElement;
   }
 
   public setProps(props: Partial<Props>) {
+    // Проверяем, изменились ли реально props
+    let hasChanges = false;
+    for (const key in props) {
+      if (this.props[key as keyof Props] !== props[key as keyof Props]) {
+        hasChanges = true;
+        break;
+      }
+    }
+
+    if (!hasChanges) return;
+
+    const oldProps = { ...this.props };
     this.props = { ...this.props, ...props } as Props;
-    this.render();
+
+    console.log("oldProps", oldProps);
+    console.log("props", props);
+
+    if (this.shouldUpdate(oldProps, this.props)) {
+      console.log("ререндерим setProps");
+      this.render();
+    }
   }
 
+  protected shouldUpdate(oldProps: Props, newProps: Props): boolean {
+    const excludeKeys = ["__children", "__refs"];
+
+    const allKeys = new Set([
+      ...Object.keys(oldProps).filter((key) => !excludeKeys.includes(key)),
+      ...Object.keys(newProps).filter((key) => !excludeKeys.includes(key)),
+    ]);
+
+    // Сравниваем значения
+    for (const key of allKeys) {
+      const oldValue = oldProps[key as keyof Props];
+      const newValue = newProps[key as keyof Props];
+
+      if (oldValue !== newValue) {
+        return true;
+      }
+    }
+    return false;
+  }
   protected componentWillUnmount() {}
 
   private unmountComponent() {
@@ -107,23 +164,43 @@ export default abstract class Block<
   }
 
   protected render() {
+    console.log("block render");
+    // Сохраняем старый DOM элемент
+    const oldElement = this.domElement;
+    console.log("block oldElement", oldElement);
     this.unmountComponent();
+    console.log("block unmount");
+    // Очищаем детей
+
+    this.children = [];
+    this.refs = {};
+
     const fragment = this.compile();
-    if (this.domElement && fragment) {
-      this.domElement.replaceWith(fragment);
+    console.log("console.log(fragment);", fragment);
+    if (fragment) {
+      if (oldElement && oldElement.parentNode) {
+        // Заменяем старый элемент новым
+        oldElement.replaceWith(fragment);
+        this.domElement = fragment; // ВАЖНО: обновляем domElement
+      } else if (this.domElement && this.domElement.parentNode) {
+        this.domElement.replaceWith(fragment);
+        this.domElement = fragment; // ВАЖНО: обновляем domElement
+      } else {
+        this.domElement = fragment; // ВАЖНО: устанавливаем domElement
+      }
     }
-    this.domElement = fragment;
+
     this.mountComponent();
   }
 
-  private compile(): Element | null {
-    console.log("this.props", this.props);
-    console.log("this.template", this.template);
+
+  protected compile(): Element | null {
+    // Создаем безопасную копию props для Handlebars
     const html = Handlebars.compile(this.template)(this.props);
     const templateElement = document.createElement("template");
     templateElement.innerHTML = html;
     const fragment = templateElement.content;
-
+    console.log("this.props.__children", this.props.__children);
     if (this.props.__children) {
       this.children = this.props.__children.map((child) => child.component);
 
@@ -131,7 +208,7 @@ export default abstract class Block<
         child.embed(fragment);
       });
     }
-
+    console.log("this.children", this.children);
     const defaultRefs = this.props.__refs ?? {};
 
     this.refs = Array.from(fragment.querySelectorAll("[ref]")).reduce(
@@ -141,9 +218,45 @@ export default abstract class Block<
         element.removeAttribute("ref");
         return list;
       },
-      defaultRefs,
+      defaultRefs as Record<string, Element>,
     );
 
     return templateElement.content.firstElementChild;
   }
+
+  // private createSafeProps(): DeepClean<Props> {
+  //   const safeProps = {} as DeepClean<Props>;
+  //   console.log("this.props", this.props);
+  //   for (const key in this.props) {
+  //     const value = this.props[key];
+
+  //     // Пропускаем функции
+  //     if (typeof value === "function") {
+  //       continue;
+  //     }
+
+  //     // Рекурсивно очищаем вложенные объекты
+  //     if (value && typeof value === "object" && !Array.isArray(value)) {
+  //       try {
+  //         (safeProps as Record<string, unknown>)[key] = JSON.parse(
+  //           JSON.stringify(value),
+  //         );
+  //       } catch {
+  //         (safeProps as Record<string, unknown>)[key] = {};
+  //       }
+  //     } else if (Array.isArray(value)) {
+  //       try {
+  //         (safeProps as Record<string, unknown>)[key] = JSON.parse(
+  //           JSON.stringify(value),
+  //         );
+  //       } catch {
+  //         (safeProps as Record<string, unknown>)[key] = [];
+  //       }
+  //     } else {
+  //       (safeProps as Record<string, unknown>)[key] = value;
+  //     }
+  //   }
+  //   console.log("this.safeProps", safeProps);
+  //   return safeProps;
+  // }
 }

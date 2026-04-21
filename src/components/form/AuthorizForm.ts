@@ -1,8 +1,11 @@
+import { AuthAPI } from "../../api/auth-api";
 import Block from "../../framework/Block";
+import Store from "../../store/Store";
 import type { AuthorizFormProps } from "../../types/type";
+import { getRouter } from "../../utils/navigation";
 import { InputForm } from "../input/InputForm";
 
-export class AuthorizForm extends Block <AuthorizFormProps> {
+export class AuthorizForm extends Block<AuthorizFormProps> {
   static componentName = "AuthorizForm";
   protected template = `<div class="main">
  <h1 class="main__title">Вход</h1>
@@ -11,12 +14,12 @@ export class AuthorizForm extends Block <AuthorizFormProps> {
         {{{InputForm type=this.type name=this.name ref=this.ref label=this.label}}}
       {{/each}}
       <div class="main-form__button-box">
-        {{{ButtonForm button=authorization.button}}}
-        {{{Link link=authorization.link}}}
+        {{{ButtonForm button=authorization.button navigateTo="/chats"}}}
+        {{{Link link=authorization.link href='/sign-up'}}}
       </div>
     </form>
   </div>`;
-  
+
   private inputFields: Map<string, InputForm> = new Map();
 
   constructor(props: AuthorizFormProps) {
@@ -26,37 +29,32 @@ export class AuthorizForm extends Block <AuthorizFormProps> {
   protected componentDidMount(): void {
     super.componentDidMount();
 
-    // Собираем все экземпляры InputForm в Map для удобного доступа
     this.collectInputFields();
 
-    // Добавляем обработчик отправки формы
     const form = this.element()?.querySelector("#auth-form");
     if (form) {
       form.addEventListener("submit", this.handleSubmit.bind(this));
     }
   }
 
-  // Собираем все поля формы из __children
   private collectInputFields(): void {
-    if (this.props.__children) {
-      this.props.__children.forEach((child: any) => {
-        if (child.component instanceof InputForm) {
-          const name = child.component.props.name;
-          if (name) {
-            this.inputFields.set(name, child.component);
-          }
+    this.props.__children?.forEach((child) => {
+      const component = child.component;
+      if (component instanceof InputForm) {
+        const name = component.getName();
+        if (name) {
+          this.inputFields.set(name, component);
         }
-      });
-    }
+      }
+    });
   }
 
-  private handleSubmit(event: Event): void {
+  private async handleSubmit(event: Event): Promise<void> {
     event.preventDefault();
 
     let isValid = true;
     const formData: Record<string, string> = {};
 
-    // Валидируем все поля и собираем данные
     this.inputFields.forEach((field, name) => {
       const fieldIsValid = field.validate();
       if (!fieldIsValid) {
@@ -66,18 +64,20 @@ export class AuthorizForm extends Block <AuthorizFormProps> {
     });
 
     if (isValid) {
-      // Выводим в консоль объект со всеми заполненными полями
-      console.log("Данные формы:", formData);
-      console.log("Все заполненные поля:", JSON.stringify(formData, null, 2));
-
-      // Здесь можно отправить данные на сервер
-      // this.submitForm(formData);
+      const authAPI = new AuthAPI();
+      const body = { login: formData.login, password: formData.password };
+      const responseAuth = await authAPI.signin(body);
+      if (responseAuth) {
+        const user = Store.getUser();
+        console.log('user',user)
+        const router = getRouter();
+        router.go("/messenger");
+      }
     } else {
       console.log("Форма содержит ошибки, исправьте их перед отправкой");
     }
   }
 
-  // Публичный метод для ручной валидации формы
   validateForm(): boolean {
     let isValid = true;
     this.inputFields.forEach((field) => {
@@ -88,7 +88,6 @@ export class AuthorizForm extends Block <AuthorizFormProps> {
     return isValid;
   }
 
-  // Публичный метод для получения данных формы
   getFormData(): Record<string, string> {
     const formData: Record<string, string> = {};
     this.inputFields.forEach((field, name) => {
@@ -97,7 +96,6 @@ export class AuthorizForm extends Block <AuthorizFormProps> {
     return formData;
   }
 
-  // Публичный метод для очистки всех ошибок
   clearAllErrors(): void {
     this.inputFields.forEach((field) => {
       field.clearError();

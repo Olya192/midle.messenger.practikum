@@ -1,23 +1,29 @@
 import Block from "../../framework/Block";
+import type { InputFormProps } from "../../types/type";
 
 export class InputProfile extends Block {
   static componentName = "InputProfile";
   protected template = `<div class="profile__input-box">
-  <label for="login">{{label}}</label>
+  <label for={{name}}>{{label}}</label>
   <input
     type={{type}}
     name={{name}}
     ref={{ref}}
     required
     value={{text}}
+    id={{name}}
   />
   <div class="main-form__error-message" data-error="{{name}}"></div>
 </div>`;
 
-  constructor(props: any = {}) {
+  constructor(props: InputFormProps) {
     super(props);
     // Инициализируем состояние ошибки
     this.props.error = "";
+  }
+
+  public getName(): string | undefined {
+    return this.props.name;
   }
 
   // Метод валидации в зависимости от имени поля
@@ -30,7 +36,7 @@ export class InputProfile extends Block {
         return this.validateLogin(value);
       case "old_password":
       case "new_password":
-      case "new_password2":
+      case "confirm_password": // ДОБАВЛЕНО - для подтверждения пароля
         return this.validatePassword(value);
       case "email":
         return this.validateEmail(value);
@@ -43,7 +49,7 @@ export class InputProfile extends Block {
 
   // Валидация имени (first_name, second_name)
   private validateName(value: string): string {
-    const pattern = /^[A-ZА-Я][a-zа-я]*(?:-[A-ZА-Я][a-zа-я]*)?$/;
+    const pattern = /^[A-ZА-ЯЁ][a-zа-яё]*(?:-[A-ZА-ЯЁ][a-zа-яё]*)?$/;
     if (!value) {
       return "Поле обязательно для заполнения";
     }
@@ -82,15 +88,19 @@ export class InputProfile extends Block {
 
   // Валидация пароля
   private validatePassword(value: string): string {
-    const pattern = /^(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,40}$/;
     if (!value) {
       return "Поле обязательно для заполнения";
     }
     if (value.length < 8 || value.length > 40) {
       return "Пароль должен быть от 8 до 40 символов";
     }
-    if (!pattern.test(value)) {
-      return "Пароль должен содержать минимум одну заглавную букву и одну цифру";
+    const hasUpperCase = /[A-Z]/.test(value);
+    const hasDigit = /[0-9]/.test(value);
+    if (!hasUpperCase) {
+      return "Пароль должен содержать минимум одну заглавную букву";
+    }
+    if (!hasDigit) {
+      return "Пароль должен содержать минимум одну цифру";
     }
     return "";
   }
@@ -107,12 +117,21 @@ export class InputProfile extends Block {
     return "";
   }
 
-  // Получение элемента инпута по ref
+  // ИСПРАВЛЕНО - получение элемента инпута по ref
   private getInputElement(): HTMLInputElement | null {
+    // Сначала пытаемся найти через refs
     const refName = this.props.ref;
     if (refName && this.refs[refName]) {
       return this.refs[refName] as HTMLInputElement;
     }
+    
+    // Если не нашли через refs, ищем по name или id
+    const element = this.element();
+    if (element) {
+      const input = element.querySelector(`input[name="${this.props.name}"]`);
+      if (input) return input as HTMLInputElement;
+    }
+    
     return null;
   }
 

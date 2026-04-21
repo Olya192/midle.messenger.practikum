@@ -1,8 +1,7 @@
 import Block from "../../framework/Block";
 import type { InputFormProps, ValidationResult } from "../../types/type";
 
-
-export class InputForm extends Block <InputFormProps> {
+export class InputForm extends Block<InputFormProps> {
   static componentName = "InputForm";
   protected template = `<div class="main-form__input-box">
   <label for={{name}} class="main-form__label">{{label}}</label>
@@ -23,6 +22,10 @@ export class InputForm extends Block <InputFormProps> {
     this.props.error = "";
   }
 
+  public getName(): string | undefined {
+    return this.props.name;
+  }
+
   // Метод валидации в зависимости от имени поля
   validateField(name: string, value: string): ValidationResult {
     switch (name) {
@@ -32,6 +35,7 @@ export class InputForm extends Block <InputFormProps> {
       case "login":
         return this.validateLogin(value);
       case "password":
+      case "tow-password":
         return this.validatePassword(value);
       case "email":
         return this.validateEmail(value);
@@ -68,6 +72,11 @@ export class InputForm extends Block <InputFormProps> {
     }
     return "";
   }
+
+   public showCustomError(errorMessage: string): void {
+    this.showError(errorMessage);
+  }
+
 
   // Валидация email
   private validateEmail(value: string): ValidationResult {
