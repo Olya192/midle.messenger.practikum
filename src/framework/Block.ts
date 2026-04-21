@@ -2,7 +2,6 @@ import Handlebars from "handlebars";
 import type {
   BaseProps,
   Chat,
-  DeepClean,
   FieldType,
   Message,
 } from "../types/type";
@@ -225,39 +224,39 @@ export default abstract class Block<
     return templateElement.content.firstElementChild;
   }
 
-  private createSafeProps(): DeepClean<Props> {
-    const safeProps = {} as DeepClean<Props>;
-    console.log("this.props", this.props);
-    for (const key in this.props) {
-      const value = this.props[key];
+  // private createSafeProps(): DeepClean<Props> {
+  //   const safeProps = {} as DeepClean<Props>;
+  //   console.log("this.props", this.props);
+  //   for (const key in this.props) {
+  //     const value = this.props[key];
 
-      // Пропускаем функции
-      if (typeof value === "function") {
-        continue;
-      }
+  //     // Пропускаем функции
+  //     if (typeof value === "function") {
+  //       continue;
+  //     }
 
-      // Рекурсивно очищаем вложенные объекты
-      if (value && typeof value === "object" && !Array.isArray(value)) {
-        try {
-          (safeProps as Record<string, unknown>)[key] = JSON.parse(
-            JSON.stringify(value),
-          );
-        } catch {
-          (safeProps as Record<string, unknown>)[key] = {};
-        }
-      } else if (Array.isArray(value)) {
-        try {
-          (safeProps as Record<string, unknown>)[key] = JSON.parse(
-            JSON.stringify(value),
-          );
-        } catch {
-          (safeProps as Record<string, unknown>)[key] = [];
-        }
-      } else {
-        (safeProps as Record<string, unknown>)[key] = value;
-      }
-    }
-    console.log("this.safeProps", safeProps);
-    return safeProps;
-  }
+  //     // Рекурсивно очищаем вложенные объекты
+  //     if (value && typeof value === "object" && !Array.isArray(value)) {
+  //       try {
+  //         (safeProps as Record<string, unknown>)[key] = JSON.parse(
+  //           JSON.stringify(value),
+  //         );
+  //       } catch {
+  //         (safeProps as Record<string, unknown>)[key] = {};
+  //       }
+  //     } else if (Array.isArray(value)) {
+  //       try {
+  //         (safeProps as Record<string, unknown>)[key] = JSON.parse(
+  //           JSON.stringify(value),
+  //         );
+  //       } catch {
+  //         (safeProps as Record<string, unknown>)[key] = [];
+  //       }
+  //     } else {
+  //       (safeProps as Record<string, unknown>)[key] = value;
+  //     }
+  //   }
+  //   console.log("this.safeProps", safeProps);
+  //   return safeProps;
+  // }
 }
