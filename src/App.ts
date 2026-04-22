@@ -5,21 +5,9 @@ import { type AuthService } from "./mock/authorization.ts";
 import { type Profile, type Redact } from "./mock/profile.ts";
 import { type Contacts, type Messages, type MockData } from "./mock/chats.ts";
 import Block, { type BlockOwnProps } from "./framework/Block.ts";
-// import { registerComponent } from "./framework/ComponentRegistry.ts";
 
-// import { InputForm } from "./components/input/InputForm.ts";
+
 import { AutorizationPage } from "./pages/autorizationPage/autorizationPage.ts";
-// import { ButtonForm } from "./components/button/ButtonForm.ts";
-// import { Link } from "./components/link/Link.ts";
-// import { ChatsPage } from "./pages/chatsPage/ChatsPage.ts";
-// import { ButtonBack } from "./components/button/ButtonBack.ts";
-// import { ChatsCard } from "./components/chatsCard/ChatsCard.ts";
-// import { MessagesCard } from "./components/messegCard/MessagesCard.ts";
-// import { InformCard } from "./components/imformCard/InformCard.ts";
-// import { AuthorizForm } from "./components/form/AuthorizForm.ts";
-// import { RegisdtrationForm } from "./components/form/RegisdtrationForm.ts";
-// import { InputProfile } from "./components/input/InputProfile.ts";
-// import { Footer } from "./components/footer/Footer.ts";
 import { Error404 } from "./pages/errors/404errorPage.ts";
 import { Error500 } from "./pages/errors/500errorPage.ts";
 import { ProfilePage } from "./pages/profilePage/ProfilePage.ts";
@@ -62,25 +50,6 @@ Handlebars.registerHelper('stringifyFunc', function(fn) {
     return new Handlebars.SafeString("(" + fn.toString() + ")()");
 });
 
-
-// registerComponent(InputForm);
-// registerComponent(ButtonForm);
-// registerComponent(Link);
-// registerComponent(ChatsCard);
-// registerComponent(MessagesCard);
-// registerComponent(InformCard);
-// registerComponent(InputProfile);
-// registerComponent(AuthorizForm);
-// registerComponent(ButtonBack);
-// registerComponent(RegisdtrationForm);
-// registerComponent(Footer);
-
-// registerComponent(ChatsPage);
-// registerComponent(AutorizationPage);
-// registerComponent(Error404);
-// registerComponent(Error500);
-// registerComponent(ProfilePage);
-// registerComponent(RegisdtrationPage);
 
 export default class App extends Block<FormProps> {
   private router: Router;
