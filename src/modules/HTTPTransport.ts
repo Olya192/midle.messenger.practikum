@@ -1,3 +1,5 @@
+import { API_CONFIG } from "../config/api";
+
 // Типы для HTTP методов
 type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
 
@@ -56,7 +58,8 @@ interface RequestError {
 }
 
 interface HTTPTransportConfig {
-  baseURL: string;
+  baseURL?: string; // Сделали опциональным
+  endpoint?: string; // Добавили эндпоинт
   defaultCredentials?: RequestCredentials;
   defaultHeaders?: RequestHeaders;
   defaultTimeout?: number;
@@ -90,82 +93,106 @@ function queryStringify(data: Record<string, unknown>): string {
   }, "?");
 }
 
-
 class HTTPTransport {
   private baseURL: string;
+  private endpoint: string;
   private defaultCredentials: RequestCredentials;
   private defaultHeaders: RequestHeaders;
   private defaultTimeout: number;
 
-  constructor(config: HTTPTransportConfig | string = '') {
-    if (typeof config === 'string') {
-      this.baseURL = config;
-      this.defaultCredentials = 'omit';
+  constructor(config: HTTPTransportConfig | string = "") {
+    const GLOBAL_BASE_URL = API_CONFIG.BASE_URL;
+
+    if (typeof config === "string") {
+      this.baseURL = GLOBAL_BASE_URL;
+      this.endpoint = config;
+      this.defaultCredentials = "include";
       this.defaultHeaders = {};
       this.defaultTimeout = 5000;
     } else {
-      this.baseURL = config.baseURL;
-      this.defaultCredentials = config.defaultCredentials ?? 'omit';
+      this.baseURL = config.baseURL ?? GLOBAL_BASE_URL;
+      this.endpoint = config.endpoint ?? "";
+      this.defaultCredentials = config.defaultCredentials ?? "include";
       this.defaultHeaders = config.defaultHeaders ?? {};
       this.defaultTimeout = config.defaultTimeout ?? 5000;
     }
   }
 
   private getFullUrl(url: string): string {
-    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('//')) {
+    // Если URL уже полный, возвращаем как есть
+    if (
+      url.startsWith("http://") ||
+      url.startsWith("https://") ||
+      url.startsWith("//")
+    ) {
       return url;
     }
-    return `${this.baseURL}${url}`;
+
+    // Формируем полный путь: baseURL + endpoint + url
+    let fullPath = this.baseURL;
+
+    if (this.endpoint) {
+      // Убираем лишние слеши
+      const cleanEndpoint = this.endpoint.startsWith("/")
+        ? this.endpoint
+        : `/${this.endpoint}`;
+      fullPath += cleanEndpoint.endsWith("/")
+        ? cleanEndpoint.slice(0, -1)
+        : cleanEndpoint;
+    }
+
+    const cleanUrl = url.startsWith("/") ? url : `/${url}`;
+    return `${fullPath}${cleanUrl}`;
   }
 
   async get<T = ResponseData>(
-    url: string, 
-    options: Omit<RequestOptions, 'method'> = {}
+    url: string,
+    options: Omit<RequestOptions, "method"> = {},
   ): Promise<T> {
     return this.request<T>(
-      this.getFullUrl(url), 
-      { ...options, method: METHODS.GET }, 
-      options.timeout
+      this.getFullUrl(url),
+      { ...options, method: METHODS.GET },
+      options.timeout,
     );
   }
 
   async post<T = ResponseData>(
-    url: string, 
-    options: Omit<RequestOptions, 'method'> = {}
+    url: string,
+    options: Omit<RequestOptions, "method"> = {},
   ): Promise<T> {
     return this.request<T>(
-      this.getFullUrl(url), 
-      { ...options, method: METHODS.POST }, 
-      options.timeout
+      this.getFullUrl(url),
+      { ...options, method: METHODS.POST },
+      options.timeout,
     );
   }
 
   async put<T = ResponseData>(
-    url: string, 
-    options: Omit<RequestOptions, 'method'> = {}
+    url: string,
+    options: Omit<RequestOptions, "method"> = {},
   ): Promise<T> {
     return this.request<T>(
-      this.getFullUrl(url), 
-      { ...options, method: METHODS.PUT }, 
-      options.timeout
+      this.getFullUrl(url),
+      { ...options, method: METHODS.PUT },
+      options.timeout,
     );
   }
 
   async delete<T = ResponseData>(
-    url: string, 
-    options: Omit<RequestOptions, 'method'> = {}
+    url: string,
+    options: Omit<RequestOptions, "method"> = {},
   ): Promise<T> {
     return this.request<T>(
-      this.getFullUrl(url), 
-      { ...options, method: METHODS.DELETE }, 
-      options.timeout
+      this.getFullUrl(url),
+      { ...options, method: METHODS.DELETE },
+      options.timeout,
     );
   }
 
   private request<T>(
     url: string,
     options: RequestOptions = {},
-    timeout?: number
+    timeout?: number,
   ): Promise<T> {
     const {
       headers = {},
@@ -175,12 +202,11 @@ class HTTPTransport {
       credentials: requestCredentials,
     } = options;
 
-    // Определяем credentials с приоритетом: опции запроса > дефолтные
     const credentials = requestCredentials ?? this.defaultCredentials;
 
     return new Promise<T>((resolve, reject) => {
       if (!method) {
-        reject(new Error('HTTP method is required'));
+        reject(new Error("HTTP method is required"));
         return;
       }
 
@@ -188,14 +214,18 @@ class HTTPTransport {
       const isGet = method === METHODS.GET;
 
       let requestUrl = url;
-      if (isGet && data && typeof data === 'object' && !(data instanceof FormData)) {
+      if (
+        isGet &&
+        data &&
+        typeof data === "object" &&
+        !(data instanceof FormData)
+      ) {
         requestUrl = `${url}${queryStringify(data as Record<string, unknown>)}`;
       }
 
       xhr.open(method, requestUrl);
 
-      // Устанавливаем withCredentials для поддержки cookies
-      if (credentials === 'include') {
+      if (credentials === "include") {
         xhr.withCredentials = true;
       }
 
@@ -203,7 +233,6 @@ class HTTPTransport {
         xhr.responseType = responseType;
       }
 
-      // Применяем дефолтные заголовки
       const allHeaders: RequestHeaders = { ...this.defaultHeaders, ...headers };
 
       Object.entries(allHeaders).forEach(([key, value]) => {
@@ -214,13 +243,16 @@ class HTTPTransport {
         if (xhr.status >= 200 && xhr.status < 300) {
           let response: unknown;
 
-          if (responseType !== undefined && responseType !== '') {
+          if (responseType !== undefined && responseType !== "") {
             response = xhr.response;
           } else {
             try {
-              const contentType = xhr.getResponseHeader('Content-Type');
-              if (contentType?.includes('application/json')) {
-                response = JSON.parse(xhr.responseText) as Record<string, unknown>;
+              const contentType = xhr.getResponseHeader("Content-Type");
+              if (contentType?.includes("application/json")) {
+                response = JSON.parse(xhr.responseText) as Record<
+                  string,
+                  unknown
+                >;
               } else {
                 response = xhr.responseText;
               }
@@ -242,13 +274,13 @@ class HTTPTransport {
 
       xhr.onabort = () =>
         reject({
-          reason: 'Request aborted',
+          reason: "Request aborted",
           request: xhr,
         } satisfies RequestError);
 
       xhr.onerror = () =>
         reject({
-          reason: 'Network error',
+          reason: "Network error",
           request: xhr,
         } satisfies RequestError);
 
@@ -257,7 +289,7 @@ class HTTPTransport {
 
       xhr.ontimeout = () =>
         reject({
-          reason: 'Request timeout',
+          reason: "Request timeout",
           timeout: requestTimeout,
           request: xhr,
         } satisfies RequestError);
@@ -266,9 +298,9 @@ class HTTPTransport {
         xhr.send();
       } else if (data instanceof FormData) {
         xhr.send(data);
-      } else if (typeof data === 'object' && data !== null) {
-        if (!allHeaders['Content-Type']) {
-          xhr.setRequestHeader('Content-Type', 'application/json');
+      } else if (typeof data === "object" && data !== null) {
+        if (!allHeaders["Content-Type"]) {
+          xhr.setRequestHeader("Content-Type", "application/json");
         }
         xhr.send(JSON.stringify(data));
       } else {

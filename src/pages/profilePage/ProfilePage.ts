@@ -1,5 +1,6 @@
 import { AuthAPI } from "../../api/auth-api";
 import { UserAPI, type ChangeProfileRequest } from "../../api/user-api";
+import { API_CONFIG } from "../../config/api";
 import Block from "../../framework/Block";
 import { type Profile, type Redact } from "../../mock/profile";
 import Store from "../../store/Store";
@@ -183,7 +184,7 @@ export class ProfilePage extends Block<ProfilePageProps> {
       return user.avatar;
     }
 
-    const BASE_URL = "https://ya-praktikum.tech/api/v2";
+    const BASE_URL = API_CONFIG.BASE_URL;;
     return `${BASE_URL}/resources${user.avatar}`;
   }
 

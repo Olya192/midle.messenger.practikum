@@ -1,6 +1,7 @@
 import { BaseAPI } from "../modules/http/base-api";
 import HTTPTransport from "../modules/HTTPTransport";
 import Store from "../store/Store";
+import { getRouter } from "../utils/navigation";
 import { ChatAPI } from "./chat-api";
 
 export interface SignUpRequest {
@@ -27,8 +28,8 @@ interface UserData {
   avatar: string;
 }
 
+// Теперь передаем только эндпоинт (пустая строка, так как будем использовать полные пути)
 const authAPIInstance = new HTTPTransport({
-  baseURL: "https://ya-praktikum.tech/api/v2",
   defaultCredentials: "include",
   defaultHeaders: {
     "Content-Type": "application/json",
@@ -36,7 +37,7 @@ const authAPIInstance = new HTTPTransport({
   defaultTimeout: 10000,
 });
 
-export class AuthAPI  extends BaseAPI{
+export class AuthAPI extends BaseAPI {
   signup(userData: SignUpRequest): Promise<SignUpResponse> {
     return authAPIInstance
       .post<SignUpResponse>("/auth/signup", {
@@ -72,8 +73,13 @@ export class AuthAPI  extends BaseAPI{
         });
       })
       .catch((error) => {
-        Store.setState("user", null);
-        Store.setState("isAuthenticated", false);
+        const router = getRouter();
+        console.log("error", error);
+        if (error?.response?.includes("User already in system")) {
+          localStorage.setItem("user", "user");
+          router.go("/messenger");
+          return;
+        }
         throw error;
       });
   }

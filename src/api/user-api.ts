@@ -22,8 +22,8 @@ interface UserData {
   avatar: string;
 }
 
+// Теперь передаем только эндпоинт
 const userAPIInstance = new HTTPTransport({
-  baseURL: "https://ya-praktikum.tech/api/v2",
   defaultCredentials: "include",
   defaultHeaders: {
     "Content-Type": "application/json",
@@ -31,22 +31,20 @@ const userAPIInstance = new HTTPTransport({
   defaultTimeout: 10000,
 });
 
-// Создаем отдельный экземпляр для загрузки файлов (без Content-Type)
+// Для загрузки файлов (без Content-Type)
 const avatarAPIInstance = new HTTPTransport({
-  baseURL: "https://ya-praktikum.tech/api/v2",
   defaultCredentials: "include",
-  defaultHeaders: {}, // Пустые заголовки по умолчанию
+  defaultHeaders: {},
   defaultTimeout: 10000,
 });
 
-export class UserAPI  extends BaseAPI {
+export class UserAPI extends BaseAPI {
   changeProfile(userData: ChangeProfileRequest): Promise<UserData> {
     return userAPIInstance
       .put<UserData>("/user/profile", {
         data: userData,
       })
       .then((updatedUserData) => {
-        // Обновляем стор с новыми данными
         Store.setState("user", updatedUserData);
         return updatedUserData;
       });
@@ -71,23 +69,18 @@ export class UserAPI  extends BaseAPI {
     });
   }
 
-  // Новый метод для загрузки аватара
   async changeAvatar(avatarFile: File): Promise<UserData> {
     const formData = new FormData();
     formData.append("avatar", avatarFile);
 
-    // Используем avatarAPIInstance без Content-Type заголовка
     const response = await avatarAPIInstance.put<UserData>(
       "/user/profile/avatar",
       {
         data: formData,
-        headers: {
-          // Не устанавливаем Content-Type - браузер сам установит multipart/form-data с boundary
-        },
+        // Не устанавливаем Content-Type - браузер сам установит multipart/form-data
       },
     );
 
-    // Обновляем стор с новыми данными пользователя
     Store.setUser(response);
     return response;
   }

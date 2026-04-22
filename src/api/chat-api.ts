@@ -96,9 +96,8 @@ export interface UnreadCountResponse {
   unread_count: number;
 }
 
-// api/ChatAPI.ts
+// Теперь передаем только эндпоинт (пустая строка, так как будем использовать полные пути)
 const chatAPIInstance = new HTTPTransport({
-  baseURL: "https://ya-praktikum.tech/api/v2",
   defaultCredentials: "include",
   defaultHeaders: {
     "Content-Type": "application/json",
@@ -106,7 +105,7 @@ const chatAPIInstance = new HTTPTransport({
   defaultTimeout: 10000,
 });
 
-export class ChatAPI extends BaseAPI{
+export class ChatAPI extends BaseAPI {
   // GET /chats - Получить список чатов
   getChats(params: GetChatsParams = {}): Promise<Chat[]> {
     const queryParams: Record<string, string> = {};
@@ -205,6 +204,7 @@ export class ChatAPI extends BaseAPI{
 
     return chatAPIInstance.put<Chat>("/chats/avatar", {
       data: formData,
+      // Не устанавливаем Content-Type - браузер сам установит multipart/form-data
     });
   }
 
