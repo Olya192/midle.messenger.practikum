@@ -15,7 +15,7 @@ export class AuthorizForm extends Block<AuthorizFormProps> {
       {{/each}}
       <div class="main-form__button-box">
         {{{ButtonForm button=authorization.button navigateTo="/chats"}}}
-        {{{Link link=authorization.link href='/sign-up'}}}
+        <p class="main-form__link" id='link'>Нет аккаунта?</p>
       </div>
     </form>
   </div>`;
@@ -25,6 +25,24 @@ export class AuthorizForm extends Block<AuthorizFormProps> {
   constructor(props: AuthorizFormProps) {
     super(props);
   }
+
+  protected events = {
+    click: (e: Event) => {
+      e.stopPropagation();
+      const target = e.target as HTMLElement;
+      const id = target?.id;
+      const router = getRouter();
+
+      switch (id) {
+        case "link":
+          router.go("/sign-up");
+          break;
+
+        default:
+          break;
+      }
+    },
+  };
 
   protected componentDidMount(): void {
     super.componentDidMount();
