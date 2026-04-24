@@ -72,8 +72,10 @@ export class AddChatModal extends Block<AddChatModalProps> {
 
   protected events = {
     click: (e: Event) => {
+      e.stopPropagation();
       const target = e.target as HTMLElement;
       const action = target.getAttribute("data-action");
+      console.log("action", action);
 
       switch (action) {
         case "modal__search-btn":
@@ -130,7 +132,6 @@ export class AddChatModal extends Block<AddChatModalProps> {
       Store.setState("chats", chats);
 
       this.render();
-      
     } catch (error) {
       console.error("Ошибка при поиске пользователей:", error);
       this.props.error = "Ошибка при поиске пользователей";
@@ -140,6 +141,4 @@ export class AddChatModal extends Block<AddChatModalProps> {
       this.render();
     }
   }
-
-  
 }

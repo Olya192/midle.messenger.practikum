@@ -68,7 +68,6 @@ export class AuthorizForm extends Block<AuthorizFormProps> {
       const body = { login: formData.login, password: formData.password };
       const responseAuth = await authAPI.signin(body);
       const router = getRouter();
-      console.log("responseAut", responseAuth);
       if (responseAuth) {
         const user = Store.getUser();
         console.log("user", user);

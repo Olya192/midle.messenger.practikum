@@ -67,23 +67,6 @@ export default class App extends Block<FormProps> {
   protected componentDidMount(): void {
     // Запускаем роутер после монтирования
     this.router.start();
-    // Добавляем обработчик для навигации по ссылкам с data-navigate
-    this.setupNavigationListeners();
-  }
-
-  private setupNavigationListeners(): void {
-    document.addEventListener("click", (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const link = target.closest("[data-navigate]");
-
-      if (link) {
-        e.preventDefault();
-        const path = link.getAttribute("data-navigate");
-        if (path) {
-          this.router.go(path);
-        }
-      }
-    });
   }
 
   private setupRoutes(): void {
