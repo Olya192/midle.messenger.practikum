@@ -1,10 +1,5 @@
 import Handlebars from "handlebars";
-import type {
-  BaseProps,
-  Chat,
-  FieldType,
-  Message,
-} from "../types/type";
+import type { BaseProps, Chat, FieldType, Message } from "../types/type";
 import type { AuthService } from "../mock/authorization";
 import type { Contacts, Messages, MockData } from "../mock/chats";
 import type { Profile, Redact } from "../mock/profile";
@@ -78,7 +73,6 @@ export default abstract class Block<
 
   public element(): Element | null {
     if (!this.domElement) {
-      console.log("ререндерим element");
       this.render();
     }
     return this.domElement;
@@ -98,12 +92,7 @@ export default abstract class Block<
 
     const oldProps = { ...this.props };
     this.props = { ...this.props, ...props } as Props;
-
-    console.log("oldProps", oldProps);
-    console.log("props", props);
-
     if (this.shouldUpdate(oldProps, this.props)) {
-      console.log("ререндерим setProps");
       this.render();
     }
   }
@@ -164,19 +153,15 @@ export default abstract class Block<
   }
 
   protected render() {
-    console.log("block render");
     // Сохраняем старый DOM элемент
     const oldElement = this.domElement;
-    console.log("block oldElement", oldElement);
     this.unmountComponent();
-    console.log("block unmount");
     // Очищаем детей
 
     this.children = [];
     this.refs = {};
 
     const fragment = this.compile();
-    console.log("console.log(fragment);", fragment);
     if (fragment) {
       if (oldElement && oldElement.parentNode) {
         // Заменяем старый элемент новым
@@ -193,14 +178,12 @@ export default abstract class Block<
     this.mountComponent();
   }
 
-
   protected compile(): Element | null {
     // Создаем безопасную копию props для Handlebars
     const html = Handlebars.compile(this.template)(this.props);
     const templateElement = document.createElement("template");
     templateElement.innerHTML = html;
     const fragment = templateElement.content;
-    console.log("this.props.__children", this.props.__children);
     if (this.props.__children) {
       this.children = this.props.__children.map((child) => child.component);
 
@@ -208,7 +191,6 @@ export default abstract class Block<
         child.embed(fragment);
       });
     }
-    console.log("this.children", this.children);
     const defaultRefs = this.props.__refs ?? {};
 
     this.refs = Array.from(fragment.querySelectorAll("[ref]")).reduce(
@@ -226,7 +208,6 @@ export default abstract class Block<
 
   // private createSafeProps(): DeepClean<Props> {
   //   const safeProps = {} as DeepClean<Props>;
-  //   console.log("this.props", this.props);
   //   for (const key in this.props) {
   //     const value = this.props[key];
 
@@ -256,7 +237,6 @@ export default abstract class Block<
   //       (safeProps as Record<string, unknown>)[key] = value;
   //     }
   //   }
-  //   console.log("this.safeProps", safeProps);
   //   return safeProps;
   // }
 }

@@ -74,8 +74,7 @@ export class AuthAPI extends BaseAPI {
       })
       .catch((error) => {
         const router = getRouter();
-        console.log("error", error);
-        if (error?.response?.includes("User already in system")) {
+          if (error?.response?.includes("User already in system")) {
           localStorage.setItem("user", "user");
           router.go("/messenger");
           return;
@@ -88,7 +87,6 @@ export class AuthAPI extends BaseAPI {
     try {
       const chatAPI = new ChatAPI();
       const chats = await chatAPI.getChats({ offset: 0, limit: 100 });
-      console.log("Чаты загружены после авторизации:", chats);
       Store.setState("chats", chats);
     } catch (error) {
       console.error("Ошибка при загрузке чатов после авторизации:", error);

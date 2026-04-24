@@ -54,10 +54,12 @@ export class ProfilePage extends Block<ProfilePageProps> {
   private isUpdating = false;
   private isLoading = false; // Флаг для предотвращения множественных запросов
   // private lastUserData: string = ""; // Для сравнения данных
- // Флаг для предотвращения рекурсии
+  // Флаг для предотвращения рекурсии
 
   protected template = `  <main class="profile">
-     {{{ButtonBack props=this}}}  
+  <button class="button-back" data-action='button-back'>
+  <img src="../../../public/Group 202.svg" alt="Назад к чатам" class="button-back__image"/>
+</button>
       <div class="profile__container">
         <div class="profile__main">
           <form class="profile__image">
@@ -77,10 +79,13 @@ export class ProfilePage extends Block<ProfilePageProps> {
           <!-- Блок с информацией о пользователе -->
           <div id='profile' class="profile__input-content">
             {{#if profile}}
-              {{#each profile}}
-                {{{InformCard title=title text=text id=@index}}}
-              {{/each}}
-            {{else}}
+        {{#each profile}}
+          <div class="profile__card">
+            <p>{{title}}</p>
+            <p>{{text}}</p>
+          </div>
+        {{/each}}
+      {{else}}
               <p>Загрузка данных...</p>
             {{/if}}
           </div>
@@ -184,7 +189,7 @@ export class ProfilePage extends Block<ProfilePageProps> {
       return user.avatar;
     }
 
-    const BASE_URL = API_CONFIG.BASE_URL;;
+    const BASE_URL = API_CONFIG.BASE_URL;
     return `${BASE_URL}/resources${user.avatar}`;
   }
 
@@ -255,15 +260,15 @@ export class ProfilePage extends Block<ProfilePageProps> {
     });
   }
 
-   private async loadUserIfNeeded(): Promise<void> {
+  private async loadUserIfNeeded(): Promise<void> {
     // Предотвращаем множественные запросы
     if (this.isLoading) {
-      console.log('Already loading user, skipping...');
+      console.log("Already loading user, skipping...");
       return;
     }
 
     if (this.dataLoaded) {
-      console.log('Data already loaded');
+      console.log("Data already loaded");
       return;
     }
 
@@ -271,20 +276,20 @@ export class ProfilePage extends Block<ProfilePageProps> {
 
     try {
       const user = Store.getUser();
-      console.log('Current user from store:', user);
+      console.log("Current user from store:", user);
 
       if (user && user.id !== 0) {
-        console.log('User found in store, id:', user.id);
+        console.log("User found in store, id:", user.id);
         this.dataLoaded = true;
         this.updateProfileData();
         this.isLoading = false;
         return;
       }
 
-      console.log('Loading user from API...');
+      console.log("Loading user from API...");
       const authAPI = new AuthAPI();
       const userData = await authAPI.getUser();
-      console.log('User data from API:', userData);
+      console.log("User data from API:", userData);
 
       if (userData && userData.id !== 0) {
         this.dataLoaded = true;
@@ -370,58 +375,57 @@ export class ProfilePage extends Block<ProfilePageProps> {
     ];
   }
 
-   private updateProfileData(): void {
+  private updateProfileData(): void {
     // Предотвращаем рекурсивные обновления
     if (this.isUpdating) {
-      console.log('Already updating, skipping...');
+      console.log("Already updating, skipping...");
       return;
     }
-    
+
     this.isUpdating = true;
-    
+
     try {
       const user = Store.getUser();
 
       if (!user || user.id === 0) {
-        console.log('No valid user');
+        console.log("No valid user");
         return;
       }
 
-      // Создаем строку для сравнения данных
-      const currentUserData = JSON.stringify({
-        profile: this.props.profile,
-        profileRedact: this.props.profileRedact,
-        avatarUrl: this.props.avatarUrl,
-        userName: this.props.userName
-      });
+      console.log("Updating profile data for user:", user.id);
 
+      // Получаем новые данные
       const newProfile = ProfilePage.getUserProfileData();
       const newProfileRedact = ProfilePage.getUserProfileRedactData();
       const newAvatarUrl = ProfilePage.getUserAvatarUrl();
 
-      const newUserData = JSON.stringify({
-        profile: newProfile,
-        profileRedact: newProfileRedact,
-        avatarUrl: newAvatarUrl,
-        userName: user.first_name
-      });
+      // Принудительно обновляем props (без проверки на изменения)
+      const needsUpdate =
+        JSON.stringify(this.props.profile) !== JSON.stringify(newProfile) ||
+        JSON.stringify(this.props.profileRedact) !==
+          JSON.stringify(newProfileRedact) ||
+        this.props.avatarUrl !== newAvatarUrl ||
+        this.props.userName !== user.first_name;
 
-      // Обновляем только если данные действительно изменились
-      if (currentUserData !== newUserData) {
-        console.log('Data changed, updating props...');
-        
-        // Обновляем props без вызова render через setProps
+      if (needsUpdate) {
+        console.log("Data changed, updating props...");
+
+        // Обновляем props
         this.props.profile = newProfile;
         this.props.profileRedact = newProfileRedact;
         this.props.passwordRedact = PASSWORD_REDACT_DATA;
         this.props.userName = user.first_name;
         this.props.avatarUrl = newAvatarUrl;
-        
-        // Вызываем render только один раз
-        this.render();
+
+        // Вызываем render только если компонент смонтирован
+        if (this.element()) {
+          this.render();
+        }
       } else {
-        console.log('No data changes');
+        console.log("No data changes needed");
       }
+    } catch (error) {
+      console.error("Error updating profile data:", error);
     } finally {
       this.isUpdating = false;
     }
@@ -434,8 +438,12 @@ export class ProfilePage extends Block<ProfilePageProps> {
       if (!rootElement) return;
 
       const profileBlock = rootElement.querySelector("#profile") as HTMLElement;
-      const profileRedactBlock = rootElement.querySelector("#profileRedact") as HTMLElement;
-      const passwordRedactBlock = rootElement.querySelector("#passwordRedact") as HTMLElement;
+      const profileRedactBlock = rootElement.querySelector(
+        "#profileRedact",
+      ) as HTMLElement;
+      const passwordRedactBlock = rootElement.querySelector(
+        "#passwordRedact",
+      ) as HTMLElement;
 
       if (profileBlock) profileBlock.style.display = "none";
       if (profileRedactBlock) profileRedactBlock.style.display = "none";
@@ -460,9 +468,9 @@ export class ProfilePage extends Block<ProfilePageProps> {
 
   private async saveProfile(): Promise<void> {
     if (this.isLoading) return;
-    
+
     this.isLoading = true;
-    
+
     try {
       const formData = this.collectFormData("#profileRedact");
 
@@ -475,21 +483,40 @@ export class ProfilePage extends Block<ProfilePageProps> {
         phone: formData.phone || "",
       };
 
-      if (!profileData.first_name || !profileData.second_name || 
-          !profileData.login || !profileData.email || !profileData.phone) {
+      if (
+        !profileData.first_name ||
+        !profileData.second_name ||
+        !profileData.login ||
+        !profileData.email ||
+        !profileData.phone
+      ) {
         alert("Пожалуйста, заполните все обязательные поля");
         return;
       }
-      
+
       const updatedUser = await this.userAPI.changeProfile(profileData);
       Store.setUser(updatedUser);
-      
-      // Обновляем данные без дополнительных запросов
+
       this.dataLoaded = true;
-      this.updateProfileData();
+
+      const newProfile = ProfilePage.getUserProfileData();
+      const newProfileRedact = ProfilePage.getUserProfileRedactData();
+      const newAvatarUrl = ProfilePage.getUserAvatarUrl();
+
+      this.props.profile = newProfile;
+      this.props.profileRedact = newProfileRedact;
+      this.props.userName = updatedUser.first_name;
+      this.props.avatarUrl = newAvatarUrl;
+
+      // ✅ Показываем блок профиля
       this.showActiveBlock("profile");
       Store.setInputContent("profile");
 
+      this.render();
+
+      this.clearFormData("#profileRedact");
+
+      alert("Профиль успешно обновлен");
     } catch (error) {
       console.error("Failed to update profile:", error);
       alert("Ошибка при обновлении профиля");
@@ -498,14 +525,14 @@ export class ProfilePage extends Block<ProfilePageProps> {
     }
   }
 
-   private async savePassword(): Promise<void> {
+  private async savePassword(): Promise<void> {
     if (this.isLoading) return;
-    
+
     this.isLoading = true;
-    
+
     try {
       const formData = this.collectFormData("#passwordRedact");
-      
+
       const oldPassword = formData.old_password || "";
       const newPassword = formData.new_password || "";
       const confirmPassword = formData.confirm_password || "";
@@ -524,21 +551,34 @@ export class ProfilePage extends Block<ProfilePageProps> {
         alert("Пароль должен содержать не менее 8 символов");
         return;
       }
-      
+
       await this.userAPI.changePassword({
         oldPassword,
         newPassword,
       });
-      
+
       this.showActiveBlock("profile");
       Store.setInputContent("profile");
+
       this.clearFormData("#passwordRedact");
-      
+
+      const authAPI = new AuthAPI();
+      const userData = await authAPI.getUser();
+      if (userData && userData.id !== 0) {
+        Store.setUser(userData);
+        this.updateProfileData();
+      }
+
+      this.render();
+
       alert("Пароль успешно изменен");
     } catch (error) {
       const apiError = error as APIError;
-      
-      if (apiError.status === 401 || apiError.reason === "Password is incorrect") {
+
+      if (
+        apiError.status === 401 ||
+        apiError.reason === "Password is incorrect"
+      ) {
         alert("Неверный текущий пароль");
       } else {
         alert("Ошибка при изменении пароля");
@@ -582,15 +622,20 @@ export class ProfilePage extends Block<ProfilePageProps> {
   private backToProfile(): void {
     Store.setInputContent("profile");
     this.showActiveBlock("profile");
+
     this.updateProfileData();
+
     this.clearFormData("#profileRedact");
     this.clearFormData("#passwordRedact");
+
+    this.render();
   }
 
   protected events = {
     click: (e: Event) => {
       const target = e.target as HTMLElement;
       const action = target.getAttribute("data-action");
+      const router = getRouter();
 
       if (action === "editProfile") {
         Store.setInputContent("redactInform");
@@ -606,40 +651,48 @@ export class ProfilePage extends Block<ProfilePageProps> {
         this.savePassword();
       } else if (action === "backToProfile") {
         this.backToProfile();
+      } else if (action === "button-back") {
+        router.back();
       }
     },
   };
 
-   public componentDidMount(): void {
-  // Подписываемся на изменения стора с debounce
-  let timeoutId: ReturnType<typeof setTimeout> | null = null;
-  
-  this.storeUnsubscribe = Store.subscribe(() => {
-    // Debounce обновлений
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
-    timeoutId = setTimeout(() => {
-      if (this.dataLoaded && !this.isUpdating && !this.isLoading) {
-        this.updateProfileData();
+  public componentDidMount(): void {
+    // Подписываемся на изменения стора
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    this.storeUnsubscribe = Store.subscribe(() => {
+      // Debounce обновлений
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      timeoutId = setTimeout(() => {
+        const currentUser = Store.getUser();
+        const propsUser = this.props.profile?.[0]?.text; // email пользователя из props
+
+        // Если пользователь в Store отличается от того, что в props
+        if (currentUser && currentUser.email !== propsUser) {
+          console.log("User changed in store, updating...");
+          this.dataLoaded = true;
+          this.updateProfileData();
+        }
+
         const currentSection = Store.getInputContent();
         this.showActiveBlock(currentSection);
-      }
-    }, 100);
-  });
+      }, 100);
+    });
 
-  // Загружаем пользователя
-  this.loadUserIfNeeded();
-  
-  // Показываем активный блок
-  const currentSection = Store.getInputContent();
-  this.showActiveBlock(currentSection);
-  
-  // Настраиваем загрузку аватара
-  setTimeout(() => {
-    this.setupAvatarUpload();
-  }, 100);
-}
+    // Загружаем пользователя
+    this.loadUserIfNeeded();
+
+    // Показываем активный блок
+    const currentSection = Store.getInputContent();
+    this.showActiveBlock(currentSection);
+
+    setTimeout(() => {
+      this.setupAvatarUpload();
+    }, 100);
+  }
 
   public componentDidUpdate(): void {
     // Настраиваем загрузку аватара только если элемент существует
@@ -652,5 +705,11 @@ export class ProfilePage extends Block<ProfilePageProps> {
     if (this.storeUnsubscribe) {
       this.storeUnsubscribe();
     }
+  }
+
+  public forceUpdate(): void {
+    console.log("Force update profile page");
+    this.dataLoaded = false;
+    this.loadUserIfNeeded();
   }
 }

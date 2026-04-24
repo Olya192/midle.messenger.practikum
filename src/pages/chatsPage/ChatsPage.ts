@@ -2,6 +2,7 @@ import { ChatAPI } from "../../api/chat-api";
 import { UserAPI } from "../../api/user-api";
 import Block, { type BlockOwnProps } from "../../framework/Block";
 import Store from "../../store/Store";
+import { getRouter } from "../../utils/navigation";
 
 interface ApiChatUser {
   id: number;
@@ -233,7 +234,7 @@ export class ChatsPage extends Block<ChatsPageProps> {
   <div class="chats">
     <form class="chats__header">
       <p class="chats__add-btn" id='btn-add-chat'>добавить чат + </p>
-      <a href='/settings'>Профиль &gt;</a>
+      <p id='btn-profile'>Профиль &gt;</p>
       <input type="text" placeholder="Поиск"/>
     </form>
     <section class="chats__cards">
@@ -288,15 +289,11 @@ export class ChatsPage extends Block<ChatsPageProps> {
     </form>
     {{/if}}
   </div>
-  <div class="modal-overlay" id='modal-overlay'>
-        {{{AddChatModal}}}
-    </div>
-      <div class="modal-overlay" id='user-active-modal'>
-        <div class="modal">
+  <div class="modal-overlay1" id='modal-overlay'>
+       <div class="modal">
         <div class="modal__header">
-          <h2>{{UserActiveTitle}} пользователя</h2>
-        </div>
-        
+          <h2>Создать новый чат</h2>
+        </div>        
         <div class="modal__body">
           <div class="modal__search">
             <input 
@@ -305,15 +302,36 @@ export class ChatsPage extends Block<ChatsPageProps> {
               class="modal__input"
               id="user-search-input"
             />
-          </div>
-              
-        
+          </div>            
+        <div class="modal__footer">
+           <button class="modal__btn modal__btn--primary" id='modal__search-btn'>
+            Создать чат
+          </button>
+        </div>
+      </div>
+    </div>
+       </div>
+      <div class="modal-overlay2" id='user-active-modal'>
+        <div class="modal">
+        <div class="modal__header">
+          <h2>{{UserActiveTitle}} пользователя</h2>
+        </div>        
+        <div class="modal__body">
+          <div class="modal__search">
+            <input 
+              type="text" 
+              placeholder="Введите логин пользователя" 
+              class="modal__input"
+              id="user-search-input-chat"
+            />
+          </div>        
         <div class="modal__footer">
            <button class="modal__btn modal__btn--primary" id='modal__user-active-btn'>
            {{UserActiveTitle}}
           </button>
         </div>
       </div>
+    </div>
     </div>
 </main>`;
 
@@ -338,9 +356,11 @@ export class ChatsPage extends Block<ChatsPageProps> {
 
   protected events = {
     click: (e: Event) => {
+      e.stopPropagation();
       const target = e.target as HTMLElement;
       const id = target?.id;
       console.log("id", id);
+      const router = getRouter();
 
       const chatCard = target.closest(".chat-card");
       if (chatCard) {
@@ -355,6 +375,7 @@ export class ChatsPage extends Block<ChatsPageProps> {
         case "btn-add-chat":
         case "modal-overlay":
           this.handleAddChat();
+
           break;
         case "user-bar":
           this.handleAddUserModal();
@@ -370,6 +391,12 @@ export class ChatsPage extends Block<ChatsPageProps> {
           break;
         case "modal__user-active-btn":
           this.handleUserActionButton();
+          break;
+        case "btn-profile":
+          router.go("/settings");
+          break;
+        case "modal__search-btn":
+          this.handleSearch();
           break;
 
         default:
@@ -401,6 +428,7 @@ export class ChatsPage extends Block<ChatsPageProps> {
       this.props.displayChats = displayChats;
 
       // Store.setState("chats", displayChats);
+      this.setProps({ displayChats });
 
       if (apiChats.length > 0 && !this.props.currentDisplayChat) {
         this.props.currentDisplayChat = displayChats[0];
@@ -411,9 +439,6 @@ export class ChatsPage extends Block<ChatsPageProps> {
 
         // Сохраняем выбранный чат в Store
         Store.setState("selectedChatId", apiChats[0].id);
-
-        this.render();
-
         // Загружаем данные первого чата
         await this.loadChatData(apiChats[0].id);
       } else {
@@ -440,6 +465,7 @@ export class ChatsPage extends Block<ChatsPageProps> {
     } catch (error) {
       console.error("Ошибка при загрузке данных чата:", error);
     }
+    this.render();
   }
 
   private handleChatSelect(chatId: number): void {
@@ -458,13 +484,12 @@ export class ChatsPage extends Block<ChatsPageProps> {
       // Сохраняем выбранный чат в Store
       Store.setState("selectedChatId", chatId);
 
-      this.setProps({});
       this.loadChatData(chatId);
     }
+    this.render();
   }
+
   private handleAddChat(): void {
-    console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-    // Прямая мутация - НЕ используем setProps
     this.props.showAddChatModal = !this.props.showAddChatModal;
 
     // Вручную обновляем DOM модалки
@@ -477,11 +502,11 @@ export class ChatsPage extends Block<ChatsPageProps> {
   }
 
   private handleAddUserModal(): void {
-    // Прямая мутация - НЕ используем setProps
     this.props.showAddUserModal = !this.props.showAddUserModal;
 
     // Вручную обновляем DOM модалки
     const modalElement = document.getElementById("user-active");
+
     if (modalElement) {
       modalElement.style.display = this.props.showAddUserModal
         ? "flex"
@@ -490,20 +515,17 @@ export class ChatsPage extends Block<ChatsPageProps> {
   }
 
   private handleActiveUser(title: string): void {
-    const state = Store.getState();
-    const selectedChatId = state.selectedChatId;
-    console.log("////////////////////////////", selectedChatId);
     this.props.UserActiveTitle = title;
     this.render();
-
     this.props.showUserActiveModal = !this.props.showUserActiveModal;
+
     const modalElement = document.getElementById("user-active-modal");
     if (modalElement) {
       modalElement.style.display = this.props.showUserActiveModal
         ? "flex"
         : "none";
     }
-    
+
     this.handleAddUserModal();
   }
 
@@ -511,28 +533,50 @@ export class ChatsPage extends Block<ChatsPageProps> {
     const state = Store.getState();
     const selectedChatId = state.selectedChatId;
     const input = document.getElementById(
-      "user-search-input",
+      "user-search-input-chat",
     ) as HTMLInputElement;
     const login = input?.value.trim();
     const users = (await this.userAPI.searchUsers(login)) as ChatUser[];
 
+    console.log("this.props.UserActiveTitle", this.props.UserActiveTitle);
+
     if (this.props.UserActiveTitle == "Удалить") {
-      await this.chatAPI.deleteUsersFromChat({
-        users: [users[0].id],
-        chatId: Number(selectedChatId),
-      });
+      const usersChat = await this.chatAPI.getChatUsers(Number(selectedChatId));
+      console.log("usersChat", usersChat);
+      if (usersChat.length === 1) {
+        await this.chatAPI.deleteChat({ chatId: Number(selectedChatId) });
+      } else {
+        await this.chatAPI.deleteUsersFromChat({
+          users: [users[0].id],
+          chatId: Number(selectedChatId),
+        });
+      }
     } else {
       await this.chatAPI.addUsersToChat({
         users: [users[0].id],
         chatId: Number(selectedChatId),
       });
+      const usersChat = await this.chatAPI.getChatUsers(Number(selectedChatId));
+      console.log("usersCha", usersChat);
     }
+
     const modalElement = document.getElementById("user-active-modal");
     if (modalElement) {
       modalElement.style.display = this.props.showAddChatModal
         ? "flex"
         : "none";
     }
+
+    const rawChats = await this.chatAPI.getChats({ offset: 0, limit: 100 });
+    const cleanRawChats = this.cleanData(rawChats);
+    const apiChats: ApiChat[] = cleanRawChats.filter(this.isApiChat);
+    const displayChats: DisplayChat[] = apiChats.map((chat) =>
+      this.convertToDisplayChat(chat),
+    );
+
+    this.props.displayChats = displayChats;
+
+    this.render();
   }
 
   private formatTime(timeString: string): string {
@@ -572,14 +616,10 @@ export class ChatsPage extends Block<ChatsPageProps> {
   }
 
   protected componentDidMount(): void {
-    console.log("ChatsPage mounted");
-
     // Подписываемся на изменения в Store
     this.unsubscribeFromStore = Store.subscribe(() => {
-      console.log("Store changed, reloading chats...");
       this.loadChats();
     });
-
     // Загружаем чаты при монтировании компонента
     this.loadChats();
   }
@@ -590,6 +630,67 @@ export class ChatsPage extends Block<ChatsPageProps> {
     if (this.unsubscribeFromStore) {
       this.unsubscribeFromStore();
       this.unsubscribeFromStore = null;
+    }
+  }
+
+  private async handleSearch(): Promise<void> {
+    const input = document.getElementById(
+      "user-search-input",
+    ) as HTMLInputElement;
+
+    const login = input?.value.trim();
+    console.log("handleSearch login", login);
+    if (!login) {
+      this.props.error = "Введите логин пользователя";
+      this.render();
+      return;
+    }
+
+    try {
+      const users = (await this.userAPI.searchUsers(login)) as ChatUser[];
+      console.log("handleSearch users", users);
+
+      if (users.length === 0) {
+        this.props.error = "Пользователи не найдены";
+        this.render();
+        return;
+      }
+
+      const createChatResponse = await this.chatAPI.createChat({
+        title: users[0].login,
+      });
+
+      await this.chatAPI.addUsersToChat({
+        users: [users[0].id],
+        chatId: createChatResponse.id,
+      });
+
+      const rawChats = await this.chatAPI.getChats({ offset: 0, limit: 100 });
+      console.log("Список чатов загружен:", rawChats);
+
+      const cleanRawChats = this.cleanData(rawChats);
+      const apiChats: ApiChat[] = cleanRawChats.filter(this.isApiChat);
+
+      const displayChats: DisplayChat[] = apiChats.map((chat) =>
+        this.convertToDisplayChat(chat),
+      );
+
+      this.props.displayChats = displayChats;
+
+      if (displayChats.length > 0 && !this.props.currentDisplayChat) {
+        this.props.currentDisplayChat = displayChats[0];
+        this.props.currentChatAvatar =
+          displayChats[0].avatar || "../../../public/default-avatar.svg";
+        this.props.currentChatTitle = displayChats[0].title;
+        this.props.displayMessages = [];
+        Store.setState("selectedChatId", displayChats[0].id);
+        await this.loadChatData(displayChats[0].id);
+      }
+
+      this.render();
+    } catch (error) {
+      console.error("Ошибка при поиске пользователей:", error);
+      this.render();
     }
   }
 }
