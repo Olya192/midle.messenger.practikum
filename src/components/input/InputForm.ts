@@ -73,6 +73,11 @@ export class InputForm extends Block<InputFormProps> {
     return "";
   }
 
+   public showCustomError(errorMessage: string): void {
+    this.showError(errorMessage);
+  }
+
+
   // Валидация email
   private validateEmail(value: string): ValidationResult {
     const pattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;

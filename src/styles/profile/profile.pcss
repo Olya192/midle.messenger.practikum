@@ -22,6 +22,34 @@
     gap: 21px;
   }
 
+  &__button-save,
+  &__button-back {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+  }
+
+  &__button-save {
+    background-color: #4caf50;
+    color: white;
+  }
+
+  &__button-save:hover {
+    background-color: #45a049;
+  }
+
+  &__button-back {
+    background-color: #f44336;
+    color: white;
+  }
+
+  &__button-back:hover {
+    background-color: #da190b;
+  }
+
   &__image {
     width: 130px;
     height: 130px;
@@ -30,11 +58,61 @@
     display: flex;
     justify-content: center;
     align-items: center;
+  }
 
-    & img {
-      width: 40px;
-      height: 40px;
-    }
+  &__avatar {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  &__avatar-img {
+    width: 40px;
+    height: 40px;
+  }
+
+  &__action-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 20px;
+  }
+
+  &__image-label {
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .profile__image-label {
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.3s ease;
+    position: relative;
+  }
+
+  &__image-label.loading::after {
+    content: "";
+    position: absolute;
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__input-content {
+    display: none;
+  }
+
+  &__input-content.active {
+    display: block;
   }
 
   &__input {
@@ -60,11 +138,13 @@
   &__button-activ {
     color: #3369f3;
     text-decoration: none;
+    cursor: pointer;
   }
 
   &__button-exit {
     color: #f00;
     text-decoration: none;
+    cursor: pointer;
   }
 
   &_image-change {

@@ -86,27 +86,3 @@ export const profileRedact: Redact[] = [
     ref: "phone",
   },
 ];
-
-export const passwordRedact: Redact[] = [
-  {
-    label: "Старый пароль",
-    text: "ggeejkmdfhgg",
-    type: "password",
-    name: "old_password",
-    ref: "old_password",
-  },
-  {
-    label: "Новый пароль",
-    text: "Новый пароль",
-    type: "password",
-    name: "new_password",
-    ref: "new_password",
-  },
-  {
-    label: "Повторите новый пароль",
-    text: "Новый пароль",
-    type: "password",
-    name: "new_password2",
-    ref: "new_password2",
-  },
-];

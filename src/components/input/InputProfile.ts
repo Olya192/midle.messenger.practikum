@@ -1,5 +1,5 @@
 import Block from "../../framework/Block";
-import type { InputFormProps, ValidationResult } from "../../types/type";
+import type { InputFormProps } from "../../types/type";
 
 export class InputProfile extends Block {
   static componentName = "InputProfile";
@@ -22,8 +22,7 @@ export class InputProfile extends Block {
     this.props.error = "";
   }
 
-  
-    public getName(): string | undefined {
+  public getName(): string | undefined {
     return this.props.name;
   }
 
@@ -37,7 +36,7 @@ export class InputProfile extends Block {
         return this.validateLogin(value);
       case "old_password":
       case "new_password":
-      case "new_password2":
+      case "confirm_password": // ДОБАВЛЕНО - для подтверждения пароля
         return this.validatePassword(value);
       case "email":
         return this.validateEmail(value);
@@ -49,7 +48,7 @@ export class InputProfile extends Block {
   }
 
   // Валидация имени (first_name, second_name)
-  private validateName(value: string): ValidationResult {
+  private validateName(value: string): string {
     const pattern = /^[A-ZА-ЯЁ][a-zа-яё]*(?:-[A-ZА-ЯЁ][a-zа-яё]*)?$/;
     if (!value) {
       return "Поле обязательно для заполнения";
@@ -61,7 +60,7 @@ export class InputProfile extends Block {
   }
 
   // Валидация логина
-  private validateLogin(value: string): ValidationResult {
+  private validateLogin(value: string): string {
     const pattern = /^(?=.*[a-zA-Z])[a-zA-Z0-9_-]{3,20}$/;
     if (!value) {
       return "Поле обязательно для заполнения";
@@ -76,7 +75,7 @@ export class InputProfile extends Block {
   }
 
   // Валидация email
-  private validateEmail(value: string): ValidationResult {
+  private validateEmail(value: string): string {
     const pattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!value) {
       return "Поле обязательно для заполнения";
@@ -88,26 +87,26 @@ export class InputProfile extends Block {
   }
 
   // Валидация пароля
-  private validatePassword(value: string): ValidationResult {
-      if (!value) {
-        return "Поле обязательно для заполнения";
-      }
-      if (value.length < 8 || value.length > 40) {
-        return "Пароль должен быть от 8 до 40 символов";
-      }
-      const hasUpperCase = /[A-Z]/.test(value);
-      const hasDigit = /[0-9]/.test(value);
-      if (!hasUpperCase) {
-        return "Пароль должен содержать минимум одну заглавную букву";
-      }
-      if (!hasDigit) {
-        return "Пароль должен содержать минимум одну цифру";
-      }
-      return "";
+  private validatePassword(value: string): string {
+    if (!value) {
+      return "Поле обязательно для заполнения";
     }
+    if (value.length < 8 || value.length > 40) {
+      return "Пароль должен быть от 8 до 40 символов";
+    }
+    const hasUpperCase = /[A-Z]/.test(value);
+    const hasDigit = /[0-9]/.test(value);
+    if (!hasUpperCase) {
+      return "Пароль должен содержать минимум одну заглавную букву";
+    }
+    if (!hasDigit) {
+      return "Пароль должен содержать минимум одну цифру";
+    }
+    return "";
+  }
 
   // Валидация телефона
-  private validatePhone(value: string): ValidationResult {
+  private validatePhone(value: string): string {
     const pattern = /^\+?\d{10,15}$/;
     if (!value) {
       return "Поле обязательно для заполнения";
@@ -118,12 +117,21 @@ export class InputProfile extends Block {
     return "";
   }
 
-  // Получение элемента инпута по ref
+  // ИСПРАВЛЕНО - получение элемента инпута по ref
   private getInputElement(): HTMLInputElement | null {
+    // Сначала пытаемся найти через refs
     const refName = this.props.ref;
     if (refName && this.refs[refName]) {
       return this.refs[refName] as HTMLInputElement;
     }
+    
+    // Если не нашли через refs, ищем по name или id
+    const element = this.element();
+    if (element) {
+      const input = element.querySelector(`input[name="${this.props.name}"]`);
+      if (input) return input as HTMLInputElement;
+    }
+    
     return null;
   }
 
