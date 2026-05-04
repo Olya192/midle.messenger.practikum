@@ -2,7 +2,6 @@
   "name": "messennger",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
   "scripts": {
     "dev": "vite",
     "type-check": "tsc --noEmit",
@@ -11,18 +10,89 @@
     "start": "npm run build && npm run preview",
     "eslint": "eslint \"src/**/*.[jt]s\"",
     "stylelint": "stylelint \"src/**/*.pcss\"",
-    "lint": "tsc --noEmit && npm run stylelint && npm run eslint"
+    "lint": "rm -rf coverage && tsc --noEmit && npm run stylelint && npm run eslint",
+    "test": "jest",
+    "test:coverage": "jest --coverage && find coverage -name \"*.html\" -exec sed -i '' -e '$a\\' {} \\;",
+    "prepare": "husky"
+  },
+  "jest": {
+    "clearMocks": true,
+    "collectCoverage": true,
+    "coverageDirectory": "coverage",
+    "coverageProvider": "v8",
+    "testEnvironment": "jsdom",
+    "preset": "ts-jest",
+    "transform": {
+      "^.+\\.(ts|tsx)$": [
+        "ts-jest",
+        {
+          "tsconfig": {
+            "allowJs": true,
+            "esModuleInterop": true,
+            "strict": true,
+            "module": "commonjs",
+            "target": "ES2020",
+            "lib": [
+              "ES2020",
+              "DOM",
+              "DOM.Iterable"
+            ],
+            "types": [
+              "jest",
+              "node"
+            ]
+          }
+        }
+      ]
+    },
+    "testMatch": [
+      "**/__tests__/**/*.[jt]s?(x)",
+      "**/?(*.)+(spec|test).[jt]s?(x)"
+    ],
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json",
+      "node"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/dist/"
+    ],
+    "moduleNameMapper": {
+      "\\.(css|less|scss|sass|pcss)$": "identity-obj-proxy",
+      "\\.(svg|png|jpg|jpeg|gif|webp)$": "<rootDir>/src/mock/fileMock.js"
+    }
+  },
+  "lint-staged": {
+    "*.{js,ts}": [
+      "eslint --fix"
+    ],
+    "*.pcss": [
+      "stylelint --fix"
+    ]
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^25.6.0",
     "@yoichiro/vite-plugin-handlebars": "^1.4.0",
     "autoprefixer": "^10.4.27",
     "eslint": "^10.0.3",
     "globals": "^17.4.0",
+    "husky": "^9.1.7",
+    "jest": "^30.3.0",
+    "jest-environment-jsdom": "^30.3.0",
+    "lint-staged": "^16.4.0",
     "postcss-import": "^16.1.1",
     "postcss-nested": "^7.0.2",
     "stylelint": "^17.4.0",
     "stylelint-config-standard": "^40.0.0",
+    "ts-jest": "^29.4.9",
+    "ts-node": "^10.9.2",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.57.1",
     "vite": "^7.3.1"

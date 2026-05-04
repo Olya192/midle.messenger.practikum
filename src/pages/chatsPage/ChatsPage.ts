@@ -3,6 +3,30 @@ import { UserAPI } from "../../api/user-api";
 import Block, { type BlockOwnProps } from "../../framework/Block";
 import Store from "../../store/Store";
 import { getRouter } from "../../utils/navigation";
+import { connect, getMessages, sendMessage } from "../../api/chat-websockets";
+import { AuthAPI } from "../../api/auth-api";
+import defaultAvatar from "../../assets/images/default-avatar.svg";
+import group194 from "../../assets/images/Group 194.svg";
+import group196 from "../../assets/images/Group 196.svg";
+import group202 from "../../assets/images/Group 202.svg";
+
+// Функция для экранирования HTML
+function escapeHtml(str: string): string {
+  if (!str) return '';
+  
+  const htmlEscapes: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+    '/': '&#x2F;',
+    '`': '&#x60;',
+    '=': '&#x3D;'
+  };
+  
+  return str.replace(/[&<>"'/`=]/g, (char) => htmlEscapes[char]);
+}
 
 interface ApiChatUser {
   id: number;
@@ -14,6 +38,20 @@ interface ApiChatUser {
   phone: string;
   avatar: string;
   role: string;
+}
+
+interface Messages {
+  user_id: number;
+  content: string;
+  time: string;
+  id: number;
+  type: string;
+  date: string;
+}
+
+interface GroupedMessage {
+  date: string;
+  messages: Messages[];
 }
 
 interface ApiLastMessage {
@@ -58,6 +96,15 @@ interface ChatData {
   last_message: ChatLastMessage | null;
 }
 
+export interface IMessage {
+  user_id: number;
+  content: string;
+  time: string;
+  id: number;
+  type: string;
+  date: string;
+}
+
 interface DisplayChat extends ChatData {
   lastMessageContent: string;
   lastMessageTime: string;
@@ -90,6 +137,23 @@ interface DisplayMessage {
   type: string;
 }
 
+export type MessagesWS = {
+  chat_id: number;
+  time: string;
+  type: string;
+  user_id: string;
+  content: string;
+  file?: {
+    id: number;
+    user_id: number;
+    path: string;
+    filename: string;
+    content_type: string;
+    content_size: number;
+    upload_date: string;
+  };
+};
+
 interface ChatsPageProps extends BlockOwnProps {
   showAddChatModal?: boolean;
   onAddChat?: () => void;
@@ -106,6 +170,12 @@ interface ChatsPageProps extends BlockOwnProps {
   showAddUserModal: boolean;
   UserActiveTitle: string;
   showUserActiveModal: boolean;
+  group194Icon?: string;
+  group196Icon?: string;
+  group202Icon?: string;
+  chatMessages: GroupedMessage[];
+  userOwnID: number;
+  error?: string;
 }
 
 export class ChatsPage extends Block<ChatsPageProps> {
@@ -113,13 +183,69 @@ export class ChatsPage extends Block<ChatsPageProps> {
   private chatAPI = new ChatAPI();
   private userAPI = new UserAPI();
   private unsubscribeFromStore: (() => void) | null = null;
-
-  // Добавляем флаг для предотвращения множественных рендеров
   private isRendering = false;
+
+  // // Проверка на XSS паттерны
+  // private containsXSSPattern(value: string): boolean {
+  //   if (!value) return false;
+    
+  //   const xssPatterns = [
+  //     /<script\b/i,
+  //     /javascript:/i,
+  //     /onerror\s*=/i,
+  //     /onload\s*=/i,
+  //     /onclick\s*=/i,
+  //     /<iframe\b/i,
+  //     /<object\b/i,
+  //     /<embed\b/i,
+  //     /<link\b/i,
+  //     /expression\s*\(/i,
+  //     /url\s*\(/i,
+  //     /<img[^>]+src\s*=\s*["'][^"']*["']/i
+  //   ];
+    
+  //   return xssPatterns.some(pattern => pattern.test(value));
+  // }
+
+  // Санитизация сообщения перед отправкой
+  private sanitizeMessageContent(content: string): string {
+    if (!content) return '';
+    
+    // Удаляем опасные HTML теги
+    let sanitized = content
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+      .replace(/javascript:/gi, '')
+      .replace(/on\w+\s*=/gi, '')
+      .replace(/<img[^>]+>/gi, '');
+    
+    // Ограничиваем длину сообщения
+    if (sanitized.length > 5000) {
+      sanitized = sanitized.substring(0, 5000);
+    }
+    
+    // Экранируем HTML символы
+    return escapeHtml(sanitized);
+  }
+
+  // Санитизация названия чата
+  private sanitizeChatTitle(title: string): string {
+    if (!title) return 'Чат';
+    let sanitized = title.replace(/[^a-zA-Zа-яА-ЯёЁ0-9\s_-]/g, '');
+    if (sanitized.length > 100) {
+      sanitized = sanitized.substring(0, 100);
+    }
+    return escapeHtml(sanitized);
+  }
+
+  // Санитизация логина пользователя
+  private sanitizeLogin(login: string): string {
+    if (!login) return '';
+    return login.replace(/[^a-zA-Z0-9_-]/g, '');
+  }
 
   private cleanData<T>(data: T): T {
     try {
-      // Используем JSON для удаления всех циклических ссылок
       return JSON.parse(JSON.stringify(data));
     } catch (error) {
       console.error("Ошибка при очистке данных:", error);
@@ -130,9 +256,7 @@ export class ChatsPage extends Block<ChatsPageProps> {
   private sanitizeChat(chat: DisplayChat | undefined): SafeChat | undefined {
     if (!chat) return undefined;
 
-    // Создаем новый объект без ссылок на оригинал
     const cleanChat = this.cleanData(chat);
-
     const lastMessage = cleanChat.last_message;
     let safeLastMessage: ApiLastMessage | null = null;
 
@@ -140,27 +264,27 @@ export class ChatsPage extends Block<ChatsPageProps> {
       safeLastMessage = {
         user: {
           id: lastMessage.user.id || 0,
-          first_name: lastMessage.user.first_name || "",
-          second_name: lastMessage.user.second_name || "",
-          display_name:
+          first_name: escapeHtml(lastMessage.user.first_name || ""),
+          second_name: escapeHtml(lastMessage.user.second_name || ""),
+          display_name: escapeHtml(
             lastMessage.user.display_name ||
             `${lastMessage.user.first_name} ${lastMessage.user.second_name}`.trim() ||
-            "Пользователь",
-          login: lastMessage.user.login || "",
-          email: lastMessage.user.email || "",
-          phone: lastMessage.user.phone || "",
+            "Пользователь"
+          ),
+          login: escapeHtml(lastMessage.user.login || ""),
+          email: escapeHtml(lastMessage.user.email || ""),
+          phone: escapeHtml(lastMessage.user.phone || ""),
           avatar: lastMessage.user.avatar || "",
-          role: lastMessage.user.role || "user",
+          role: escapeHtml(lastMessage.user.role || "user"),
         },
-        time: lastMessage.time,
-        content: lastMessage.content,
+        time: escapeHtml(lastMessage.time),
+        content: escapeHtml(lastMessage.content),
       };
     }
 
-    // Возвращаем полностью новый объект
     return {
       id: cleanChat.id,
-      title: cleanChat.title,
+      title: this.sanitizeChatTitle(cleanChat.title),
       avatar: cleanChat.avatar,
       unread_count: cleanChat.unread_count,
       created_by: cleanChat.created_by,
@@ -169,7 +293,6 @@ export class ChatsPage extends Block<ChatsPageProps> {
   }
 
   private sanitizeChats(chats: DisplayChat[]): SafeChat[] {
-    // Очищаем весь массив от циклических ссылок
     const cleanChats = this.cleanData(chats);
     return cleanChats
       .map((chat) => this.sanitizeChat(chat))
@@ -177,20 +300,86 @@ export class ChatsPage extends Block<ChatsPageProps> {
   }
 
   private sanitizeMessages(messages: DisplayMessage[]): SafeMessage[] {
-    // Очищаем сообщения от циклических ссылок
     const cleanMessages = this.cleanData(messages);
     return cleanMessages.map((msg) => ({
       id: msg.id,
       senderId: msg.senderId,
-      text: msg.text,
-      time: msg.time,
+      text: escapeHtml(msg.text),
+      time: escapeHtml(msg.time),
       chatId: msg.chatId,
-      type: msg.type,
+      type: escapeHtml(msg.type),
     }));
   }
 
+  private formatTime(timeString: string): string {
+    if (!timeString) return "";
+    const date = new Date(timeString);
+    return date.toLocaleTimeString("ru-RU", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  private formatDateMonth(dateString: string): string {
+    if (!dateString) return "";
+
+    const date = new Date(dateString);
+    const day = date.getDate();
+
+    const months: { [key: number]: string } = {
+      0: "января",
+      1: "февраля",
+      2: "марта",
+      3: "апреля",
+      4: "мая",
+      5: "июня",
+      6: "июля",
+      7: "августа",
+      8: "сентября",
+      9: "октября",
+      10: "ноября",
+      11: "декабря",
+    };
+
+    const monthName = months[date.getMonth()];
+    return `${day} ${monthName}`;
+  }
+
+  private isApiChat(chat: unknown): chat is ApiChat {
+    return (
+      typeof chat === "object" &&
+      chat !== null &&
+      "id" in chat &&
+      "title" in chat &&
+      "unread_count" in chat &&
+      "created_by" in chat &&
+      "last_message" in chat
+    );
+  }
+
+  private convertToDisplayChat(chat: ApiChat): DisplayChat {
+    const sanitizedTitle = this.sanitizeChatTitle(chat.title);
+    const lastMessageContent = chat.last_message?.content 
+      ? escapeHtml(chat.last_message.content) 
+      : "Нет сообщений";
+    
+    return {
+      id: chat.id,
+      title: sanitizedTitle,
+      avatar: chat.avatar
+        ? `https://ya-praktikum.tech/api/v2/resources${chat.avatar}`
+        : defaultAvatar,
+      unread_count: chat.unread_count,
+      created_by: chat.created_by,
+      last_message: chat.last_message,
+      lastMessageContent: lastMessageContent,
+      lastMessageTime: chat.last_message
+        ? this.formatTime(chat.last_message.time)
+        : "",
+    };
+  }
+
   private createTemplateData(): void {
-    // Очищаем все данные перед рендерингом
     this.props.safeChats = this.cleanData(
       this.sanitizeChats(this.props.displayChats || []),
     );
@@ -207,9 +396,10 @@ export class ChatsPage extends Block<ChatsPageProps> {
     }
 
     this.props.safeCurrentChatAvatar =
-      this.props.currentChatAvatar || "../../../public/default-avatar.svg";
-    this.props.safeCurrentChatTitle =
-      this.props.currentChatTitle || "Выберите чат";
+      this.props.currentChatAvatar || defaultAvatar;
+    this.props.safeCurrentChatTitle = this.props.currentChatTitle 
+      ? this.sanitizeChatTitle(this.props.currentChatTitle)
+      : "Выберите чат";
   }
 
   protected render(): void {
@@ -231,7 +421,7 @@ export class ChatsPage extends Block<ChatsPageProps> {
   }
 
   protected template = `<main class="messenger">
-  <div class="chats">
+   <div class="chats">
     <form class="chats__header">
       <p class="chats__add-btn" id='btn-add-chat'>добавить чат + </p>
       <p id='btn-profile'>Профиль &gt;</p>
@@ -239,7 +429,7 @@ export class ChatsPage extends Block<ChatsPageProps> {
     </form>
     <section class="chats__cards">
         {{#each safeChats}}
-          <div class="chat-card" data-chat-id="{{id}}" onclick={{../onChatClick}}>
+          <div class="chat-card" data-chat-id="{{id}}">
             <img src="{{avatar}}" alt="{{title}}" class="chat-avatar">
             <div class="chat-info">
               <p class="chat-name">{{title}}</p>
@@ -259,31 +449,40 @@ export class ChatsPage extends Block<ChatsPageProps> {
     <div class="messages__header">
        <img src="{{safeCurrentChatAvatar}}" alt="Avatar" class="messages__avatar">
        <p>{{safeCurrentChatTitle}}</p>
-       <img src="../../../public/Group 194.svg" alt="More" class="messages__more" id='user-bar'>
+       <img src="{{group194Icon}}" alt="More" class="messages__more" id='user-bar'>
 <div class="user-active" id="user-active">
 <p class="user-active__action" id='add-user'>Добавить пользователя</p>
 <p class="user-active__action" id='del-user'>Удалить пользователя</p>
 </div>
 
     </div>
-    <section class="messages__cards">
-        {{#each safeMessages}}
-          <div class="message {{#if isOwn}}message--own{{/if}}">
-            <p class="message__text">{{text}}</p>
-            <span class="message__time">{{time}}</span>
-          </div>
+    <div class="messages__cards-wrapper">
+    <div class="messages__cards">
+    {{#each chatMessages}}
+        <div class="messages__date-separator">
+            <div class="separator-line"></div>
+            <span class="separator-date">{{date}}</span>
+            <div class="separator-line"></div>
+        </div>
+        {{#each messages}}
+            <div class="messages__card{{#if (eq user_id  @root.userOwnID)}}--me{{/if}}">
+                <p class="message__text">{{content}}</p>
+                <span class="message__time">{{time}}</span>
+            </div>
         {{/each}}
-    </section>
+    {{/each}}
+</div>
+     </div>
     {{#if safeSelectedChat}}
     <form class="messages__write">
       <input type="file" id="file-box" class="messages__file-box">
       <label for="file-box" class="messages__file-label">
-        <img src="../../../public/Group 196.svg" alt="Загрузить файл">
+        <img src="{{group196Icon}}" alt="Загрузить файл">
       </label>
       <div class="messages__form">
-        <input type="text" placeholder="Сообщение" class="messages__box">
+        <input type="text" placeholder="Сообщение" class="messages__box" id='messages-text'>
         <button class="messages__button" type="submit">
-          <img src="../../../public/Group 202.svg" class="messages__enter" alt="Отправить">
+          <img src="{{group202Icon}}" class="messages__enter" alt="Отправить" id='messages-send'>
         </button>    
       </div>  
     </form>
@@ -341,7 +540,7 @@ export class ChatsPage extends Block<ChatsPageProps> {
       safeChats: [],
       safeMessages: [],
       safeSelectedChat: undefined,
-      safeCurrentChatAvatar: "../../../public/default-avatar.svg",
+      safeCurrentChatAvatar: defaultAvatar,
       safeCurrentChatTitle: "Выберите чат",
       displayMessages: [],
       displayChats: [],
@@ -349,14 +548,20 @@ export class ChatsPage extends Block<ChatsPageProps> {
       showAddUserModal: false,
       UserActiveTitle: "",
       showUserActiveModal: false,
+      group194Icon: group194,
+      group196Icon: group196,
+      group202Icon: group202,
+      chatMessages: [],
+      userOwnID: 0,
     };
-
     super(initialProps);
+    this.saveData = this.saveData.bind(this);
   }
 
   protected events = {
     click: (e: Event) => {
       e.stopPropagation();
+      e.preventDefault();
       const target = e.target as HTMLElement;
       const id = target?.id;
       console.log("id", id);
@@ -375,7 +580,6 @@ export class ChatsPage extends Block<ChatsPageProps> {
         case "btn-add-chat":
         case "modal-overlay":
           this.handleAddChat();
-
           break;
         case "user-bar":
           this.handleAddUserModal();
@@ -398,7 +602,9 @@ export class ChatsPage extends Block<ChatsPageProps> {
         case "modal__search-btn":
           this.handleSearch();
           break;
-
+        case "messages-send":
+          this.sendMessages();
+          break;
         default:
           break;
       }
@@ -409,7 +615,7 @@ export class ChatsPage extends Block<ChatsPageProps> {
     try {
       console.log("Loading chats...");
       const auth = localStorage.getItem("user");
-      // Проверяем, авторизован ли пользователь
+      
       if (!auth) {
         console.log("User not authenticated, skipping chats load");
         return;
@@ -426,20 +632,16 @@ export class ChatsPage extends Block<ChatsPageProps> {
       );
 
       this.props.displayChats = displayChats;
-
-      // Store.setState("chats", displayChats);
       this.setProps({ displayChats });
 
       if (apiChats.length > 0 && !this.props.currentDisplayChat) {
         this.props.currentDisplayChat = displayChats[0];
         this.props.currentChatAvatar =
           apiChats[0].avatar || "../../../public/default-avatar.svg";
-        this.props.currentChatTitle = apiChats[0].title;
+        this.props.currentChatTitle = this.sanitizeChatTitle(apiChats[0].title);
         this.props.displayMessages = [];
 
-        // Сохраняем выбранный чат в Store
         Store.setState("selectedChatId", apiChats[0].id);
-        // Загружаем данные первого чата
         await this.loadChatData(apiChats[0].id);
       } else {
         this.setProps({});
@@ -454,18 +656,95 @@ export class ChatsPage extends Block<ChatsPageProps> {
       const { token } = await this.chatAPI.getChatToken(chatId);
       console.log("Токен для WebSocket получен:", token);
 
-      // Сохраняем токен в Store
       Store.setState(`chatTokens.${chatId}`, token);
 
       const users = await this.chatAPI.getChatUsers(chatId);
       console.log("Пользователи чата:", users);
 
-      // Сохраняем пользователей чата в Store
+      const authAPI = new AuthAPI();
+      const userData = await authAPI.getUser();
+
+      connect({ chatId, userId: userData?.id, token, saveData: this.saveData });
+      getMessages();
+
       Store.setState(`chatUsers.${chatId}`, users);
     } catch (error) {
       console.error("Ошибка при загрузке данных чата:", error);
     }
     this.render();
+  }
+
+  public saveData(data: string) {
+    const parsedData = JSON.parse(data);
+
+    if (parsedData?.id) {
+      getMessages();
+      return;
+    }
+
+    const sortedMessages = [...parsedData].sort((a, b) => {
+      return new Date(a.time).getTime() - new Date(b.time).getTime();
+    });
+
+    const formattedMessages: IMessage[] = sortedMessages.map((msg) => ({
+      user_id: msg.user_id,
+      content: escapeHtml(msg.content), // Экранируем содержимое сообщения
+      time: this.formatTime(msg.time),
+      id: msg.id,
+      type: escapeHtml(msg.type),
+      date: this.formatDateMonth(msg.time),
+    }));
+
+    const groupedMessages = this.groupMessagesByDate(formattedMessages);
+
+    const authAPI = new AuthAPI();
+    authAPI.getUser().then((userData: { id: number }) => {
+      this.setProps({
+        chatMessages: groupedMessages,
+        userOwnID: Number(userData.id),
+      });
+      console.log('groupedMessages', groupedMessages);
+    });
+  }
+
+  private groupMessagesByDate(messages: Messages[]): GroupedMessage[] {
+    const groups: GroupedMessage[] = [];
+    let currentDate: string | null = null;
+    let currentGroup: GroupedMessage | null = null;
+
+    messages.forEach((message: Messages) => {
+      if (message.date !== currentDate) {
+        currentDate = message.date;
+        currentGroup = {
+          date: escapeHtml(currentDate),
+          messages: [],
+        };
+        groups.push(currentGroup);
+      }
+      if (currentGroup) {
+        currentGroup.messages.push({
+          ...message,
+          content: escapeHtml(message.content),
+        });
+      }
+    });
+
+    return groups;
+  }
+
+  private sendMessages(): void {
+    const input = document.getElementById("messages-text") as HTMLInputElement;
+    let content = input?.value.trim();
+    
+    if (!content) return;
+    
+    // Санитизация сообщения перед отправкой
+    content = this.sanitizeMessageContent(content);
+    
+    if (content) {
+      sendMessage(content);
+      input.value = "";
+    }
   }
 
   private handleChatSelect(chatId: number): void {
@@ -476,14 +755,11 @@ export class ChatsPage extends Block<ChatsPageProps> {
 
     if (selectedChat) {
       this.props.currentDisplayChat = selectedChat;
-      this.props.currentChatAvatar =
-        selectedChat.avatar || "../../../public/default-avatar.svg";
-      this.props.currentChatTitle = selectedChat.title;
+      this.props.currentChatAvatar = selectedChat.avatar || defaultAvatar;
+      this.props.currentChatTitle = this.sanitizeChatTitle(selectedChat.title);
       this.props.displayMessages = [];
 
-      // Сохраняем выбранный чат в Store
       Store.setState("selectedChatId", chatId);
-
       this.loadChatData(chatId);
     }
     this.render();
@@ -492,7 +768,6 @@ export class ChatsPage extends Block<ChatsPageProps> {
   private handleAddChat(): void {
     this.props.showAddChatModal = !this.props.showAddChatModal;
 
-    // Вручную обновляем DOM модалки
     const modalElement = document.getElementById("modal-overlay");
     if (modalElement) {
       modalElement.style.display = this.props.showAddChatModal
@@ -504,9 +779,7 @@ export class ChatsPage extends Block<ChatsPageProps> {
   private handleAddUserModal(): void {
     this.props.showAddUserModal = !this.props.showAddUserModal;
 
-    // Вручную обновляем DOM модалки
     const modalElement = document.getElementById("user-active");
-
     if (modalElement) {
       modalElement.style.display = this.props.showAddUserModal
         ? "flex"
@@ -535,98 +808,94 @@ export class ChatsPage extends Block<ChatsPageProps> {
     const input = document.getElementById(
       "user-search-input-chat",
     ) as HTMLInputElement;
-    const login = input?.value.trim();
-    const users = (await this.userAPI.searchUsers(login)) as ChatUser[];
+    let login = input?.value.trim();
+    
+    // Санитизация логина
+    login = this.sanitizeLogin(login);
+    
+    if (!login) {
+      this.showErrorMessage("Введите логин пользователя");
+      return;
+    }
+    
+    try {
+      const users = (await this.userAPI.searchUsers(login)) as ChatUser[];
+      console.log("handleSearch users", users);
 
-    console.log("this.props.UserActiveTitle", this.props.UserActiveTitle);
+      if (users.length === 0) {
+        this.showErrorMessage("Пользователи не найдены");
+        return;
+      }
 
-    if (this.props.UserActiveTitle == "Удалить") {
-      const usersChat = await this.chatAPI.getChatUsers(Number(selectedChatId));
-      console.log("usersChat", usersChat);
-      if (usersChat.length === 1) {
-        await this.chatAPI.deleteChat({ chatId: Number(selectedChatId) });
+      if (this.props.UserActiveTitle == "Удалить") {
+        const usersChat = await this.chatAPI.getChatUsers(Number(selectedChatId));
+        console.log("usersChat", usersChat);
+        
+        if (usersChat.length === 1) {
+          await this.chatAPI.deleteChat({ chatId: Number(selectedChatId) });
+        } else {
+          await this.chatAPI.deleteUsersFromChat({
+            users: [users[0].id],
+            chatId: Number(selectedChatId),
+          });
+        }
       } else {
-        await this.chatAPI.deleteUsersFromChat({
+        await this.chatAPI.addUsersToChat({
           users: [users[0].id],
           chatId: Number(selectedChatId),
         });
+        const usersChat = await this.chatAPI.getChatUsers(Number(selectedChatId));
+        console.log("usersChat", usersChat);
       }
-    } else {
-      await this.chatAPI.addUsersToChat({
-        users: [users[0].id],
-        chatId: Number(selectedChatId),
-      });
-      const usersChat = await this.chatAPI.getChatUsers(Number(selectedChatId));
-      console.log("usersCha", usersChat);
+
+      const modalElement = document.getElementById("user-active-modal");
+      if (modalElement) {
+        modalElement.style.display = this.props.showAddChatModal
+          ? "flex"
+          : "none";
+      }
+
+      const rawChats = await this.chatAPI.getChats({ offset: 0, limit: 100 });
+      const cleanRawChats = this.cleanData(rawChats);
+      const apiChats: ApiChat[] = cleanRawChats.filter(this.isApiChat);
+      const displayChats: DisplayChat[] = apiChats.map((chat) =>
+        this.convertToDisplayChat(chat),
+      );
+
+      this.props.displayChats = displayChats;
+      this.render();
+    } catch (error) {
+      console.error("Ошибка:", error);
+      this.showErrorMessage("Произошла ошибка, попробуйте позже");
     }
+  }
 
-    const modalElement = document.getElementById("user-active-modal");
-    if (modalElement) {
-      modalElement.style.display = this.props.showAddChatModal
-        ? "flex"
-        : "none";
+  private showErrorMessage(message: string): void {
+    const messagesContainer = this.element()?.querySelector(".messages__cards");
+    if (messagesContainer) {
+      const errorDiv = document.createElement("div");
+      errorDiv.className = "error-message";
+      errorDiv.textContent = message;
+      errorDiv.style.color = "red";
+      errorDiv.style.padding = "10px";
+      errorDiv.style.textAlign = "center";
+      messagesContainer.prepend(errorDiv);
+      
+      setTimeout(() => {
+        errorDiv.remove();
+      }, 3000);
     }
-
-    const rawChats = await this.chatAPI.getChats({ offset: 0, limit: 100 });
-    const cleanRawChats = this.cleanData(rawChats);
-    const apiChats: ApiChat[] = cleanRawChats.filter(this.isApiChat);
-    const displayChats: DisplayChat[] = apiChats.map((chat) =>
-      this.convertToDisplayChat(chat),
-    );
-
-    this.props.displayChats = displayChats;
-
-    this.render();
-  }
-
-  private formatTime(timeString: string): string {
-    if (!timeString) return "";
-    const date = new Date(timeString);
-    return date.toLocaleTimeString("ru-RU", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-
-  private isApiChat(chat: unknown): chat is ApiChat {
-    return (
-      typeof chat === "object" &&
-      chat !== null &&
-      "id" in chat &&
-      "title" in chat &&
-      "unread_count" in chat &&
-      "created_by" in chat &&
-      "last_message" in chat
-    );
-  }
-
-  private convertToDisplayChat(chat: ApiChat): DisplayChat {
-    return {
-      id: chat.id,
-      title: chat.title,
-      avatar: chat.avatar || "../../../public/default-avatar.svg",
-      unread_count: chat.unread_count,
-      created_by: chat.created_by,
-      last_message: chat.last_message,
-      lastMessageContent: chat.last_message?.content || "Нет сообщений",
-      lastMessageTime: chat.last_message
-        ? this.formatTime(chat.last_message.time)
-        : "",
-    };
   }
 
   protected componentDidMount(): void {
-    // Подписываемся на изменения в Store
     this.unsubscribeFromStore = Store.subscribe(() => {
       this.loadChats();
     });
-    // Загружаем чаты при монтировании компонента
     this.loadChats();
   }
 
   protected componentWillUnmount(): void {
     console.log("ChatsPage unmounting");
-    // Отписываемся от Store при размонтировании
     if (this.unsubscribeFromStore) {
       this.unsubscribeFromStore();
       this.unsubscribeFromStore = null;
@@ -638,26 +907,28 @@ export class ChatsPage extends Block<ChatsPageProps> {
       "user-search-input",
     ) as HTMLInputElement;
 
-    const login = input?.value.trim();
+    let login = input?.value.trim();
     console.log("handleSearch login", login);
+    
     if (!login) {
-      this.props.error = "Введите логин пользователя";
-      this.render();
+      this.showErrorMessage("Введите логин пользователя");
       return;
     }
+
+    // Санитизация логина
+    login = this.sanitizeLogin(login);
 
     try {
       const users = (await this.userAPI.searchUsers(login)) as ChatUser[];
       console.log("handleSearch users", users);
 
       if (users.length === 0) {
-        this.props.error = "Пользователи не найдены";
-        this.render();
+        this.showErrorMessage("Пользователи не найдены");
         return;
       }
 
       const createChatResponse = await this.chatAPI.createChat({
-        title: users[0].login,
+        title: this.sanitizeChatTitle(users[0].login),
       });
 
       await this.chatAPI.addUsersToChat({
@@ -681,16 +952,23 @@ export class ChatsPage extends Block<ChatsPageProps> {
         this.props.currentDisplayChat = displayChats[0];
         this.props.currentChatAvatar =
           displayChats[0].avatar || "../../../public/default-avatar.svg";
-        this.props.currentChatTitle = displayChats[0].title;
+        this.props.currentChatTitle = this.sanitizeChatTitle(displayChats[0].title);
         this.props.displayMessages = [];
         Store.setState("selectedChatId", displayChats[0].id);
         await this.loadChatData(displayChats[0].id);
       }
 
       this.render();
+      
+      // Закрываем модальное окно
+      const modalElement = document.getElementById("modal-overlay");
+      if (modalElement) {
+        modalElement.style.display = "none";
+        this.props.showAddChatModal = false;
+      }
     } catch (error) {
       console.error("Ошибка при поиске пользователей:", error);
-      this.render();
+      this.showErrorMessage("Ошибка при создании чата");
     }
   }
 }

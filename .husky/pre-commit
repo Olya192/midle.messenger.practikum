@@ -1,0 +1,5 @@
+#!/usr/bin/env bash.
+
+npx lint-staged
+npm run type-check
+npm test -- --bail --passWithNoTests
