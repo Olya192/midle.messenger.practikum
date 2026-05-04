@@ -7,7 +7,7 @@
 ## 🚀 Деплой
 
 [Ссылка на деплой](https://vermillion-arithmetic-cd277c.netlify.app/)
-[Ссылка на деплой vercel](https://midle-messenger-practikum-ofaedmeea-olyas-projects-8de5d7af.vercel.app/)
+[Ссылка на деплой vercel](https://midle-messenger-practikum.vercel.app?_vercel_share=9VPSwlAN7GXmVRJ8Ia0kEVEKykV8y41Z)
 
 ## 📋 Особенности
 
