@@ -12,7 +12,8 @@
     "stylelint": "stylelint \"src/**/*.pcss\"",
     "lint": "rm -rf coverage && tsc --noEmit && npm run stylelint && npm run eslint",
     "test": "jest",
-    "test:coverage": "jest --coverage && find coverage -name \"*.html\" -exec sed -i '' -e '$a\\' {} \\;"
+    "test:coverage": "jest --coverage && find coverage -name \"*.html\" -exec sed -i '' -e '$a\\' {} \\;",
+    "prepare": "husky"
   },
   "jest": {
     "clearMocks": true,
@@ -74,6 +75,7 @@
     "autoprefixer": "^10.4.27",
     "eslint": "^10.0.3",
     "globals": "^17.4.0",
+    "husky": "^9.1.7",
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0",
     "postcss-import": "^16.1.1",
