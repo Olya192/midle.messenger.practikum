@@ -66,6 +66,19 @@
       "\\.(svg|png|jpg|jpeg|gif|webp)$": "<rootDir>/src/mock/fileMock.js"
     }
   },
+  "lint-staged": {
+    "*.{js,ts}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.pcss": [
+      "stylelint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@testing-library/jest-dom": "^6.9.1",
@@ -78,6 +91,7 @@
     "husky": "^9.1.7",
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0",
+    "lint-staged": "^16.4.0",
     "postcss-import": "^16.1.1",
     "postcss-nested": "^7.0.2",
     "stylelint": "^17.4.0",
