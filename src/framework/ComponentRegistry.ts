@@ -14,8 +14,8 @@ function registerComponent<TProps extends BlockOwnProps>(Component: {
   Handlebars.registerHelper(
     Component.componentName,
     function (this: unknown, { hash, data }: HelperOptions) {
-     
-      const component = new Component(hash);
+     const props = (hash || {}) as TProps;
+      const component = new Component(props);
       if ("ref" in hash) {
         (data.root.__refs = data.root.__refs || {})[hash.ref] =
           component.element();

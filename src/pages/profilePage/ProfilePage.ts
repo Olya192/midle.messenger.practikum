@@ -6,6 +6,24 @@ import { type Profile, type Redact } from "../../mock/profile";
 import Store from "../../store/Store";
 import { getRouter } from "../../utils/navigation";
 
+// Функция для экранирования HTML
+function escapeHtml(str: string): string {
+  if (!str) return '';
+  
+  const htmlEscapes: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+    '/': '&#x2F;',
+    '`': '&#x60;',
+    '=': '&#x3D;'
+  };
+  
+  return str.replace(/[&<>"'/`=]/g, (char) => htmlEscapes[char]);
+}
+
 // Данные для смены пароля
 const PASSWORD_REDACT_DATA: Redact[] = [
   {
@@ -52,9 +70,7 @@ export class ProfilePage extends Block<ProfilePageProps> {
   private storeUnsubscribe?: () => void;
   private dataLoaded = false;
   private isUpdating = false;
-  private isLoading = false; // Флаг для предотвращения множественных запросов
-  // private lastUserData: string = ""; // Для сравнения данных
-  // Флаг для предотвращения рекурсии
+  private isLoading = false;
 
   protected template = `  <main class="profile">
   <button class="button-back" data-action='button-back'>
@@ -93,10 +109,6 @@ export class ProfilePage extends Block<ProfilePageProps> {
           <!-- Блок редактирования данных пользователя -->
           <div id='profileRedact' class="profile__input-content" style="display: none;">
             <h3 class="profile__form-title">Редактирование данных</h3>
-            <!-- Отладочная информация -->
-  <div style="background: yellow; padding: 10px; margin: 10px;">
-    Debug: profileRedact = {{#if profileRedact}}Есть данные ({{profileRedact.length}} полей){{else}}Нет данных{{/if}}
-  </div>
             {{#if profileRedact}}
               {{#each profileRedact}}
                 <div class="profile__input-box">
@@ -193,6 +205,123 @@ export class ProfilePage extends Block<ProfilePageProps> {
     return `${BASE_URL}/resources${user.avatar}`;
   }
 
+  // Санитизация данных перед отправкой
+  private sanitizeInput(data: Record<string, string>): Record<string, string> {
+    const sanitized: Record<string, string> = {};
+    
+    for (const [key, value] of Object.entries(data)) {
+      let sanitizedValue = value?.trim() || '';
+      
+      // Для разных полей своя логика валидации
+      switch (key) {
+        case 'first_name':
+        case 'second_name':
+          // Только буквы, дефис и пробел
+          sanitizedValue = sanitizedValue.replace(/[^a-zA-Zа-яА-ЯёЁ\s-]/g, '');
+          break;
+          
+        case 'login':
+          // Буквы, цифры, дефис, подчеркивание
+          sanitizedValue = sanitizedValue.replace(/[^a-zA-Z0-9_-]/g, '');
+          break;
+          
+        case 'email':
+          // Базовая очистка email (оставляем только допустимые символы)
+          sanitizedValue = sanitizedValue.replace(/[^a-zA-Z0-9@._-]/g, '');
+          break;
+          
+        case 'phone':
+          // Только цифры, плюс, скобки, дефис, пробел
+          sanitizedValue = sanitizedValue.replace(/[^0-9+()\s-]/g, '');
+          break;
+          
+        case 'display_name':
+          // Имя в чате - буквы, цифры, пробелы, дефис
+          sanitizedValue = sanitizedValue.replace(/[^a-zA-Zа-яА-ЯёЁ0-9\s-]/g, '');
+          break;
+          
+        case 'old_password':
+        case 'new_password':
+        case 'confirm_password':
+          // Для пароля проверяем длину
+          if (sanitizedValue.length > 100) {
+            sanitizedValue = sanitizedValue.substring(0, 100);
+          }
+          break;
+          
+        default:
+          // Для неизвестных полей - полное экранирование
+          sanitizedValue = escapeHtml(sanitizedValue);
+      }
+      
+      sanitized[key] = sanitizedValue;
+    }
+    
+    return sanitized;
+  }
+
+  // Валидация на SQL инъекции
+  private sanitizeForSQL(value: string): string {
+    if (!value) return '';
+    
+    const sqlEscapes: Record<string, string> = {
+      "'": "''",
+      '\\': '\\\\',
+      '%': '\\%',
+      '_': '\\_'
+    };
+    return value.replace(/['\\%_]/g, (char) => sqlEscapes[char]);
+  }
+
+  // Проверка на XSS паттерны
+  private containsXSSPattern(value: string): boolean {
+    if (!value) return false;
+    
+    const xssPatterns = [
+      /<script\b/i,
+      /javascript:/i,
+      /onerror\s*=/i,
+      /onload\s*=/i,
+      /onclick\s*=/i,
+      /<iframe\b/i,
+      /<object\b/i,
+      /<embed\b/i,
+      /<link\b/i,
+      /expression\s*\(/i,
+      /url\s*\(/i,
+      /<img[^>]+src\s*=\s*["'][^"']*["']/i
+    ];
+    
+    return xssPatterns.some(pattern => pattern.test(value));
+  }
+
+  private showErrorMessage(message: string, isError: boolean = true): void {
+    const rootElement = this.element();
+    if (!rootElement) return;
+
+    let errorDiv = rootElement.querySelector('.global-error-message') as HTMLElement;
+    if (!errorDiv) {
+      errorDiv = document.createElement('div');
+      errorDiv.className = 'global-error-message';
+      errorDiv.style.position = 'fixed';
+      errorDiv.style.top = '10px';
+      errorDiv.style.left = '50%';
+      errorDiv.style.transform = 'translateX(-50%)';
+      errorDiv.style.zIndex = '1000';
+      errorDiv.style.padding = '10px 20px';
+      errorDiv.style.borderRadius = '5px';
+      errorDiv.style.backgroundColor = isError ? '#f44336' : '#4CAF50';
+      errorDiv.style.color = 'white';
+      errorDiv.style.textAlign = 'center';
+      rootElement.appendChild(errorDiv);
+      
+      setTimeout(() => {
+        errorDiv.remove();
+      }, 3000);
+    }
+    errorDiv.textContent = message;
+  }
+
   private async handleAvatarUpload(file: File): Promise<void> {
     const allowedTypes = [
       "image/jpeg",
@@ -202,23 +331,23 @@ export class ProfilePage extends Block<ProfilePageProps> {
       "image/webp",
     ];
     if (!allowedTypes.includes(file.type)) {
-      alert("Пожалуйста, выберите файл в формате JPEG, JPG, PNG, GIF или WebP");
+      this.showErrorMessage("Пожалуйста, выберите файл в формате JPEG, JPG, PNG, GIF или WebP");
       return;
     }
 
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
-      alert("Файл слишком большой. Максимальный размер 5MB");
+      this.showErrorMessage("Файл слишком большой. Максимальный размер 5MB");
       return;
     }
 
     try {
       this.showAvatarLoading(true);
       await this.userAPI.changeAvatar(file);
-      await this.loadUserIfNeeded(); // Перезагружаем данные после обновления аватара
+      await this.loadUserIfNeeded();
     } catch (error) {
       console.error("Ошибка при загрузке аватара:", error);
-      alert("Ошибка при загрузке аватара");
+      this.showErrorMessage("Ошибка при загрузке аватара");
     } finally {
       this.showAvatarLoading(false);
     }
@@ -245,7 +374,6 @@ export class ProfilePage extends Block<ProfilePageProps> {
     const fileInput = rootElement.querySelector("#avatar") as HTMLInputElement;
     if (!fileInput) return;
 
-    // Удаляем старый обработчик
     const newFileInput = fileInput.cloneNode(true) as HTMLInputElement;
     fileInput.parentNode?.replaceChild(newFileInput, fileInput);
 
@@ -261,7 +389,6 @@ export class ProfilePage extends Block<ProfilePageProps> {
   }
 
   private async loadUserIfNeeded(): Promise<void> {
-    // Предотвращаем множественные запросы
     if (this.isLoading) {
       console.log("Already loading user, skipping...");
       return;
@@ -313,12 +440,12 @@ export class ProfilePage extends Block<ProfilePageProps> {
     }
 
     return [
-      { title: "Почта", text: user.email },
-      { title: "Логин", text: user.login },
-      { title: "Имя", text: user.first_name },
-      { title: "Фамилия", text: user.second_name },
-      { title: "Имя в чате", text: user.display_name || user.first_name },
-      { title: "Телефон", text: user.phone },
+      { title: "Почта", text: escapeHtml(user.email) },
+      { title: "Логин", text: escapeHtml(user.login) },
+      { title: "Имя", text: escapeHtml(user.first_name) },
+      { title: "Фамилия", text: escapeHtml(user.second_name) },
+      { title: "Имя в чате", text: escapeHtml(user.display_name || user.first_name) },
+      { title: "Телефон", text: escapeHtml(user.phone) },
     ];
   }
 
@@ -332,42 +459,42 @@ export class ProfilePage extends Block<ProfilePageProps> {
     return [
       {
         label: "Почта",
-        text: user.email,
+        text: escapeHtml(user.email),
         type: "email",
         name: "email",
         ref: "email",
       },
       {
         label: "Логин",
-        text: user.login,
+        text: escapeHtml(user.login),
         type: "text",
         name: "login",
         ref: "login",
       },
       {
         label: "Имя",
-        text: user.first_name,
+        text: escapeHtml(user.first_name),
         type: "text",
         name: "first_name",
         ref: "first_name",
       },
       {
         label: "Фамилия",
-        text: user.second_name,
+        text: escapeHtml(user.second_name),
         type: "text",
         name: "second_name",
         ref: "second_name",
       },
       {
         label: "Имя в чате",
-        text: user.display_name || user.first_name,
+        text: escapeHtml(user.display_name || user.first_name),
         type: "text",
         name: "display_name",
         ref: "display_name",
       },
       {
         label: "Телефон",
-        text: user.phone,
+        text: escapeHtml(user.phone),
         type: "tel",
         name: "phone",
         ref: "phone",
@@ -376,7 +503,6 @@ export class ProfilePage extends Block<ProfilePageProps> {
   }
 
   private updateProfileData(): void {
-    // Предотвращаем рекурсивные обновления
     if (this.isUpdating) {
       console.log("Already updating, skipping...");
       return;
@@ -394,12 +520,10 @@ export class ProfilePage extends Block<ProfilePageProps> {
 
       console.log("Updating profile data for user:", user.id);
 
-      // Получаем новые данные
       const newProfile = ProfilePage.getUserProfileData();
       const newProfileRedact = ProfilePage.getUserProfileRedactData();
       const newAvatarUrl = ProfilePage.getUserAvatarUrl();
 
-      // Принудительно обновляем props (без проверки на изменения)
       const needsUpdate =
         JSON.stringify(this.props.profile) !== JSON.stringify(newProfile) ||
         JSON.stringify(this.props.profileRedact) !==
@@ -410,14 +534,12 @@ export class ProfilePage extends Block<ProfilePageProps> {
       if (needsUpdate) {
         console.log("Data changed, updating props...");
 
-        // Обновляем props
         this.props.profile = newProfile;
         this.props.profileRedact = newProfileRedact;
         this.props.passwordRedact = PASSWORD_REDACT_DATA;
-        this.props.userName = user.first_name;
+        this.props.userName = escapeHtml(user.first_name);
         this.props.avatarUrl = newAvatarUrl;
 
-        // Вызываем render только если компонент смонтирован
         if (this.element()) {
           this.render();
         }
@@ -432,7 +554,6 @@ export class ProfilePage extends Block<ProfilePageProps> {
   }
 
   private showActiveBlock(activeSection: string): void {
-    // Используем requestAnimationFrame для избежания конфликтов с рендерингом
     requestAnimationFrame(() => {
       const rootElement = this.element();
       if (!rootElement) return;
@@ -466,6 +587,23 @@ export class ProfilePage extends Block<ProfilePageProps> {
     router.go("/");
   }
 
+  private collectFormData(selector: string): Record<string, string> {
+    const rootElement = this.element();
+    if (!rootElement) return {};
+
+    const container = rootElement.querySelector(selector);
+    const inputs = container?.querySelectorAll("input");
+    const data: Record<string, string> = {};
+
+    inputs?.forEach((input) => {
+      if (input.name) {
+        data[input.name] = input.value;
+      }
+    });
+
+    return data;
+  }
+
   private async saveProfile(): Promise<void> {
     if (this.isLoading) return;
 
@@ -473,14 +611,25 @@ export class ProfilePage extends Block<ProfilePageProps> {
 
     try {
       const formData = this.collectFormData("#profileRedact");
+      
+      // Санитизация данных формы
+      const sanitizedData = this.sanitizeInput(formData);
+      
+      // Проверка на XSS паттерны
+      for (const [key, value] of Object.entries(sanitizedData)) {
+        if (this.containsXSSPattern(value)) {
+          this.showErrorMessage(`Обнаружены недопустимые символы в поле ${key}`);
+          return;
+        }
+      }
 
       const profileData: ChangeProfileRequest = {
-        first_name: formData.first_name || "",
-        second_name: formData.second_name || "",
-        display_name: formData.display_name || formData.first_name || "",
-        login: formData.login || "",
-        email: formData.email || "",
-        phone: formData.phone || "",
+        first_name: this.sanitizeForSQL(sanitizedData.first_name || ""),
+        second_name: this.sanitizeForSQL(sanitizedData.second_name || ""),
+        display_name: this.sanitizeForSQL(sanitizedData.display_name || sanitizedData.first_name || ""),
+        login: this.sanitizeForSQL(sanitizedData.login || ""),
+        email: this.sanitizeForSQL(sanitizedData.email || ""),
+        phone: this.sanitizeForSQL(sanitizedData.phone || ""),
       };
 
       if (
@@ -490,7 +639,7 @@ export class ProfilePage extends Block<ProfilePageProps> {
         !profileData.email ||
         !profileData.phone
       ) {
-        alert("Пожалуйста, заполните все обязательные поля");
+        this.showErrorMessage("Пожалуйста, заполните все обязательные поля");
         return;
       }
 
@@ -505,10 +654,9 @@ export class ProfilePage extends Block<ProfilePageProps> {
 
       this.props.profile = newProfile;
       this.props.profileRedact = newProfileRedact;
-      this.props.userName = updatedUser.first_name;
+      this.props.userName = escapeHtml(updatedUser.first_name);
       this.props.avatarUrl = newAvatarUrl;
 
-      // ✅ Показываем блок профиля
       this.showActiveBlock("profile");
       Store.setInputContent("profile");
 
@@ -516,10 +664,10 @@ export class ProfilePage extends Block<ProfilePageProps> {
 
       this.clearFormData("#profileRedact");
 
-      alert("Профиль успешно обновлен");
+      this.showErrorMessage("Профиль успешно обновлен", false);
     } catch (error) {
       console.error("Failed to update profile:", error);
-      alert("Ошибка при обновлении профиля");
+      this.showErrorMessage("Ошибка при обновлении профиля");
     } finally {
       this.isLoading = false;
     }
@@ -532,23 +680,26 @@ export class ProfilePage extends Block<ProfilePageProps> {
 
     try {
       const formData = this.collectFormData("#passwordRedact");
+      
+      // Санитизация данных формы
+      const sanitizedData = this.sanitizeInput(formData);
 
-      const oldPassword = formData.old_password || "";
-      const newPassword = formData.new_password || "";
-      const confirmPassword = formData.confirm_password || "";
+      const oldPassword = sanitizedData.old_password || "";
+      const newPassword = sanitizedData.new_password || "";
+      const confirmPassword = sanitizedData.confirm_password || "";
 
       if (!oldPassword || !newPassword || !confirmPassword) {
-        alert("Пожалуйста, заполните все поля");
+        this.showErrorMessage("Пожалуйста, заполните все поля");
         return;
       }
 
       if (newPassword !== confirmPassword) {
-        alert("Новый пароль и подтверждение не совпадают");
+        this.showErrorMessage("Новый пароль и подтверждение не совпадают");
         return;
       }
 
       if (newPassword.length < 8) {
-        alert("Пароль должен содержать не менее 8 символов");
+        this.showErrorMessage("Пароль должен содержать не менее 8 символов");
         return;
       }
 
@@ -571,7 +722,7 @@ export class ProfilePage extends Block<ProfilePageProps> {
 
       this.render();
 
-      alert("Пароль успешно изменен");
+      this.showErrorMessage("Пароль успешно изменен", false);
     } catch (error) {
       const apiError = error as APIError;
 
@@ -579,30 +730,13 @@ export class ProfilePage extends Block<ProfilePageProps> {
         apiError.status === 401 ||
         apiError.reason === "Password is incorrect"
       ) {
-        alert("Неверный текущий пароль");
+        this.showErrorMessage("Неверный текущий пароль");
       } else {
-        alert("Ошибка при изменении пароля");
+        this.showErrorMessage("Ошибка при изменении пароля");
       }
     } finally {
       this.isLoading = false;
     }
-  }
-
-  private collectFormData(selector: string): Record<string, string> {
-    const rootElement = this.element();
-    if (!rootElement) return {};
-
-    const container = rootElement.querySelector(selector);
-    const inputs = container?.querySelectorAll("input");
-    const data: Record<string, string> = {};
-
-    inputs?.forEach((input) => {
-      if (input.name) {
-        data[input.name] = input.value;
-      }
-    });
-
-    return data;
   }
 
   private clearFormData(selector: string): void {
@@ -658,19 +792,16 @@ export class ProfilePage extends Block<ProfilePageProps> {
   };
 
   public componentDidMount(): void {
-    // Подписываемся на изменения стора
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
     this.storeUnsubscribe = Store.subscribe(() => {
-      // Debounce обновлений
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
       timeoutId = setTimeout(() => {
         const currentUser = Store.getUser();
-        const propsUser = this.props.profile?.[0]?.text; // email пользователя из props
+        const propsUser = this.props.profile?.[0]?.text;
 
-        // Если пользователь в Store отличается от того, что в props
         if (currentUser && currentUser.email !== propsUser) {
           console.log("User changed in store, updating...");
           this.dataLoaded = true;
@@ -682,10 +813,8 @@ export class ProfilePage extends Block<ProfilePageProps> {
       }, 100);
     });
 
-    // Загружаем пользователя
     this.loadUserIfNeeded();
 
-    // Показываем активный блок
     const currentSection = Store.getInputContent();
     this.showActiveBlock(currentSection);
 
@@ -695,7 +824,6 @@ export class ProfilePage extends Block<ProfilePageProps> {
   }
 
   public componentDidUpdate(): void {
-    // Настраиваем загрузку аватара только если элемент существует
     if (this.element()) {
       this.setupAvatarUpload();
     }
