@@ -10,8 +10,9 @@
     "start": "npm run build && npm run preview",
     "eslint": "eslint \"src/**/*.[jt]s\"",
     "stylelint": "stylelint \"src/**/*.pcss\"",
-    "lint": "tsc --noEmit && npm run stylelint && npm run eslint",
-    "test": "jest"
+    "lint": "rm -rf coverage && tsc --noEmit && npm run stylelint && npm run eslint",
+    "test": "jest",
+    "test:coverage": "jest --coverage && find coverage -name \"*.html\" -exec sed -i '' -e '$a\\' {} \\;"
   },
   "jest": {
     "clearMocks": true,
