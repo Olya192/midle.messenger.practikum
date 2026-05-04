@@ -112,9 +112,9 @@ describe("Router", () => {
       configurable: true,
     });
 
-    // @ts-ignore
+ //@ts-expect-error- window.location невозможно определить
     delete window.location;
-    // @ts-ignore
+//@ts-expect-error- window.location невозможно определить
     window.location = {
       ancestorOrigins: {} as DOMStringList,
       hash: "",
@@ -169,9 +169,9 @@ describe("Router", () => {
       configurable: true,
     });
 
-    // @ts-ignore
+//@ts-expect-error-window.location невозможно определить
     delete window.location;
-    // @ts-ignore
+//@ts-expect-error- window.location невозможно определить
     window.location = originalLocation;
 
     window.onpopstate = originalOnPopState;

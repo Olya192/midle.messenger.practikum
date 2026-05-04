@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 import { RegisdtrationForm } from './RegisdtrationForm';
 
 describe('RegisdtrationForm', () => {
@@ -9,6 +9,7 @@ describe('RegisdtrationForm', () => {
         button: 'Зарегистрироваться'
       }
     };
+    //@ts-expect-error - без этого ошибка но работает
     const registrationForm = new RegisdtrationForm(props);
     expect(registrationForm).toBeDefined();
   });

@@ -3,7 +3,7 @@ import { AuthorizForm } from './AuthorizForm';
 
 describe('AuthorizForm', () => {
   test('компонент должен создаваться', () => {
-    // @ts-ignore
+//@ts-expect-error - пустой пропс только для проверки, что бы работало.
     const authorizForm = new AuthorizForm({});
     expect(authorizForm).toBeDefined();
   });

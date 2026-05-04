@@ -185,27 +185,27 @@ export class ChatsPage extends Block<ChatsPageProps> {
   private unsubscribeFromStore: (() => void) | null = null;
   private isRendering = false;
 
-  // Проверка на XSS паттерны
-  private containsXSSPattern(value: string): boolean {
-    if (!value) return false;
+  // // Проверка на XSS паттерны
+  // private containsXSSPattern(value: string): boolean {
+  //   if (!value) return false;
     
-    const xssPatterns = [
-      /<script\b/i,
-      /javascript:/i,
-      /onerror\s*=/i,
-      /onload\s*=/i,
-      /onclick\s*=/i,
-      /<iframe\b/i,
-      /<object\b/i,
-      /<embed\b/i,
-      /<link\b/i,
-      /expression\s*\(/i,
-      /url\s*\(/i,
-      /<img[^>]+src\s*=\s*["'][^"']*["']/i
-    ];
+  //   const xssPatterns = [
+  //     /<script\b/i,
+  //     /javascript:/i,
+  //     /onerror\s*=/i,
+  //     /onload\s*=/i,
+  //     /onclick\s*=/i,
+  //     /<iframe\b/i,
+  //     /<object\b/i,
+  //     /<embed\b/i,
+  //     /<link\b/i,
+  //     /expression\s*\(/i,
+  //     /url\s*\(/i,
+  //     /<img[^>]+src\s*=\s*["'][^"']*["']/i
+  //   ];
     
-    return xssPatterns.some(pattern => pattern.test(value));
-  }
+  //   return xssPatterns.some(pattern => pattern.test(value));
+  // }
 
   // Санитизация сообщения перед отправкой
   private sanitizeMessageContent(content: string): string {
