@@ -2,4 +2,4 @@
 
 npx lint-staged
 npm run type-check
-npm test -- --findRelatedTests --bail --passWithNoTests
+npm test -- --bail --passWithNoTests
